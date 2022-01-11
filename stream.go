@@ -2,21 +2,45 @@ package stream
 
 type Stream[T any] interface {
 	Filter(predicate func(element T) bool) Stream[T]
+	Reduce(accumulator func(a, b T) T) (T, bool)
 }
 
-type emptyStream[T any] struct{}
+func Filter[T any](s Stream[T], predicate func(element T) bool) Stream[T] {
+	return s.Filter(predicate)
+}
 
-func (es *emptyStream[T]) Filter(func(T) bool) Stream[T] {
+func Map[T, R any](s Stream[T], mapper func(element T) R) Stream[R] {
+	switch s := s.(type) {
+	case *EmptyStream[T]:
+		return &EmptyStream[R]{}
+	case *SingletonStream[T]:
+		return &SingletonStream[R]{mapper(s.Value)}
+	}
+	return nil
+}
+
+type EmptyStream[T any] struct{}
+
+func (es *EmptyStream[T]) Filter(func(T) bool) Stream[T] {
 	return es
 }
 
-type singletonStream[T any] struct {
-	value T
+func (es *EmptyStream[T]) Reduce(func(_, _ T) T) (T, bool) {
+	var zero T
+	return zero, false
 }
 
-func (s *singletonStream[T]) Filter(predicate func(element T) bool) Stream[T] {
-	if predicate(s.value) {
+type SingletonStream[T any] struct {
+	Value T
+}
+
+func (s *SingletonStream[T]) Filter(predicate func(element T) bool) Stream[T] {
+	if predicate(s.Value) {
 		return s
 	}
-	return &emptyStream[T]{}
+	return &EmptyStream[T]{}
+}
+
+func (s *SingletonStream[T]) Reduce(func(_, _ T) T) (T, bool) {
+	return s.Value, true
 }
