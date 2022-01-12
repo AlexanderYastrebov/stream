@@ -24,7 +24,8 @@ func length(s string) int {
 }
 
 func TestStream(t *testing.T) {
-	var s stream.Stream[string]
+	s := stream.Of("hello", "world")
+	t.Log(s)
 
 	s = &stream.EmptyStream[string]{}
 
