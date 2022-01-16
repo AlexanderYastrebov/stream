@@ -35,9 +35,7 @@ func TestChainedSink(t *testing.T) {
 }
 
 func TestPipeline(t *testing.T) {
-	in := []string{"a", "b", "c"}
-	it := &sliceIterator[string]{in}
-	p := head[string](it)
+	p := head[string](nil)
 
 	q := p.
 		Filter(func(s string) bool { return true })
@@ -64,4 +62,25 @@ func TestPipeline(t *testing.T) {
 
 	x.accept("test1")
 	x.accept("test22")
+}
+
+func TestReduce(t *testing.T) {
+	in := []string{"a", "bb", "ccc", "dddd"}
+	it := &sliceIterator[string]{in}
+	p := head[string](it)
+
+	q := p.
+		Filter(func(s string) bool { return len(s) > 1 })
+
+	r := Map(q, func(s string) int { return len(s) })
+
+	x, ok := r.Reduce(func(a, b int) int { return a + b })
+
+	t.Log(x, ok)
+	if x != 9 {
+		t.Errorf("expected 9, got: %d", x)
+	}
+	if !ok {
+		t.Errorf("expected ok")
+	}
 }

@@ -72,6 +72,21 @@ func (cs *chainedSink[T, OUT]) accept(x T) {
 	cs.acceptFunc(x)
 }
 
+type accumuatorSink[T any] struct {
+	value       T
+	foundAny    bool
+	accumulator func(a, b T) T
+}
+
+func (as *accumuatorSink[T]) begin() {}
+
+func (as *accumuatorSink[T]) end() {}
+
+func (as *accumuatorSink[T]) accept(x T) {
+	as.value = as.accumulator(as.value, x)
+	as.foundAny = true
+}
+
 func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
 	return &chainedSink[T, R]{
 		downstream: s,
@@ -104,9 +119,19 @@ func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 	}
 }
 
-func (p *pipeline[S, OUT]) Reduce(func(_, _ OUT) OUT) (OUT, bool) {
-	var zero OUT
-	return zero, false
+func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
+	var it iterator[S]
+	var s sink[S]
+	a := &accumuatorSink[OUT]{accumulator: accumulator}
+
+	p.opWrapSink(a, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
+
+	s.begin()
+	for it.advance(s.accept) {
+	}
+	s.end()
+
+	return a.value, a.foundAny
 }
 
 func head[S any](it iterator[S]) *pipeline[S, S] {
