@@ -18,11 +18,17 @@ func Filter[T any](s Stream[T], predicate func(element T) bool) Stream[T] {
 }
 
 func Map[T, R any](s Stream[T], mapper func(element T) R) Stream[R] {
-	switch s := s.(type) {
+	switch p := s.(type) {
 	case *EmptyStream[T]:
 		return &EmptyStream[R]{}
 	case *SingletonStream[T]:
-		return &SingletonStream[R]{mapper(s.Value)}
+		return &SingletonStream[R]{mapper(p.Value)}
+	case *pipeline[T]:
+		return &pipeline[R]{
+			opWrapSink: func(s sink[R]) {
+				p.opWrapSink(mapWrapSink(s, mapper))
+			},
+		}
 	}
 	return nil
 }
@@ -84,6 +90,23 @@ func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 			}
 		},
 	}
+}
+
+type pipeline[OUT any] struct {
+	opWrapSink func(sink[OUT])
+}
+
+func (p *pipeline[OUT]) Filter(predicate func(OUT) bool) Stream[OUT] {
+	return &pipeline[OUT]{
+		opWrapSink: func(s sink[OUT]) {
+			p.opWrapSink(filterWrapSink(s, predicate))
+		},
+	}
+}
+
+func (p *pipeline[OUT]) Reduce(func(_, _ OUT) OUT) (OUT, bool) {
+	var zero OUT
+	return zero, false
 }
 
 type EmptyStream[T any] struct{}

@@ -33,3 +33,34 @@ func TestChainedSink(t *testing.T) {
 
 	r.accept(10)
 }
+
+func TestPipeline(t *testing.T) {
+	var x sink[string]
+	p := &pipeline[string]{
+		opWrapSink: func(s sink[string]) {
+			x = s
+		},
+	}
+
+	q := p.
+		Filter(func(s string) bool { return true })
+
+	r := Map(q, func(s string) int { return len(s) }).
+		Filter(func(i int) bool { return true })
+
+	u := Map(r, func(i int) float64 { return float64(i) })
+
+	s := &chainedSink[float64, float64]{
+		downstream: nil,
+		acceptFunc: func(x float64) {
+			t.Logf("accept: %f", x)
+		},
+	}
+
+	rr := u.(*pipeline[float64])
+
+	rr.opWrapSink(s)
+
+	x.accept("test1")
+	x.accept("test22")
+}
