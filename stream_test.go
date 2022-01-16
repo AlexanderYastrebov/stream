@@ -35,12 +35,9 @@ func TestChainedSink(t *testing.T) {
 }
 
 func TestPipeline(t *testing.T) {
-	var x sink[string]
-	p := &pipeline[string]{
-		opWrapSink: func(s sink[string]) {
-			x = s
-		},
-	}
+	in := []string{"a", "b", "c"}
+	it := &sliceIterator[string]{in}
+	p := head[string](it)
 
 	q := p.
 		Filter(func(s string) bool { return true })
@@ -57,9 +54,13 @@ func TestPipeline(t *testing.T) {
 		},
 	}
 
-	rr := u.(*pipeline[float64])
+	rr := u.(*pipeline[string, float64])
 
-	rr.opWrapSink(s)
+	var x sink[string]
+
+	rr.opWrapSink(s, func(_ iterator[string], s sink[string]) {
+		x = s
+	})
 
 	x.accept("test1")
 	x.accept("test22")

@@ -27,12 +27,12 @@ func TestStream(t *testing.T) {
 	s := stream.Of("hello", "world")
 	t.Log(s)
 
-	s = &stream.EmptyStream[string]{}
+	s = &stream.EmptyStream[string, string]{}
 
 	t.Logf("%p", s)
 	t.Logf("%p", s.Filter(func(_ string) bool { return true }))
 
-	s = &stream.SingletonStream[string]{"hello1"}
+	s = &stream.SingletonStream[string, string]{"hello1"}
 	m := &prefixMatcher{"hello"}
 	var z int
 	var ok bool
@@ -47,7 +47,7 @@ func TestStream(t *testing.T) {
 	}
 	t.Logf("%#v %t", z, ok)
 
-	var a stream.Stream[string] = &stream.SingletonStream[string]{"hello world"}
+	var a stream.Stream[string, string] = &stream.SingletonStream[string, string]{"hello world"}
 	a = stream.Filter(a, isHe)
 	a = stream.Filter(a, m.matches)
 	a = stream.Filter(a, func(e string) bool { return true })

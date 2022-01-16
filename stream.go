@@ -1,32 +1,32 @@
 package stream
 
-type Stream[T any] interface {
-	Filter(predicate func(element T) bool) Stream[T]
+type Stream[S, T any] interface {
+	Filter(predicate func(element T) bool) Stream[S, T]
 	Reduce(accumulator func(a, b T) T) (T, bool)
 }
 
-func Of[T any](x ...T) Stream[T] {
+func Of[T any](x ...T) Stream[T, T] {
 	return Slice(x)
 }
 
-func Slice[T any](x []T) Stream[T] {
+func Slice[T any](x []T) Stream[T, T] {
 	return nil
 }
 
-func Filter[T any](s Stream[T], predicate func(element T) bool) Stream[T] {
+func Filter[S, T any](s Stream[S, T], predicate func(element T) bool) Stream[S, T] {
 	return s.Filter(predicate)
 }
 
-func Map[T, R any](s Stream[T], mapper func(element T) R) Stream[R] {
+func Map[S, T, R any](s Stream[S, T], mapper func(element T) R) Stream[S, R] {
 	switch p := s.(type) {
-	case *EmptyStream[T]:
-		return &EmptyStream[R]{}
-	case *SingletonStream[T]:
-		return &SingletonStream[R]{mapper(p.Value)}
-	case *pipeline[T]:
-		return &pipeline[R]{
-			opWrapSink: func(s sink[R]) {
-				p.opWrapSink(mapWrapSink(s, mapper))
+	case *EmptyStream[S, T]:
+		return &EmptyStream[S, R]{}
+	case *SingletonStream[S, T]:
+		return &SingletonStream[S, R]{mapper(p.Value)}
+	case *pipeline[S, T]:
+		return &pipeline[S, R]{
+			opWrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
+				p.opWrapSink(mapWrapSink(s, mapper), done)
 			},
 		}
 	}
@@ -92,45 +92,53 @@ func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 	}
 }
 
-type pipeline[OUT any] struct {
-	opWrapSink func(sink[OUT])
+type pipeline[S, OUT any] struct {
+	opWrapSink func(sink[OUT], func(iterator[S], sink[S]))
 }
 
-func (p *pipeline[OUT]) Filter(predicate func(OUT) bool) Stream[OUT] {
-	return &pipeline[OUT]{
-		opWrapSink: func(s sink[OUT]) {
-			p.opWrapSink(filterWrapSink(s, predicate))
+func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
+	return &pipeline[S, OUT]{
+		opWrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
+			p.opWrapSink(filterWrapSink(s, predicate), done)
 		},
 	}
 }
 
-func (p *pipeline[OUT]) Reduce(func(_, _ OUT) OUT) (OUT, bool) {
+func (p *pipeline[S, OUT]) Reduce(func(_, _ OUT) OUT) (OUT, bool) {
 	var zero OUT
 	return zero, false
 }
 
-type EmptyStream[T any] struct{}
+func head[S any](it iterator[S]) *pipeline[S, S] {
+	return &pipeline[S, S]{
+		opWrapSink: func(s sink[S], done func(iterator[S], sink[S])) {
+			done(it, s)
+		},
+	}
+}
 
-func (es *EmptyStream[T]) Filter(func(T) bool) Stream[T] {
+type EmptyStream[S, T any] struct{}
+
+func (es *EmptyStream[S, T]) Filter(func(T) bool) Stream[S, T] {
 	return es
 }
 
-func (es *EmptyStream[T]) Reduce(func(_, _ T) T) (T, bool) {
+func (es *EmptyStream[S, T]) Reduce(func(_, _ T) T) (T, bool) {
 	var zero T
 	return zero, false
 }
 
-type SingletonStream[T any] struct {
+type SingletonStream[S, T any] struct {
 	Value T
 }
 
-func (s *SingletonStream[T]) Filter(predicate func(element T) bool) Stream[T] {
+func (s *SingletonStream[S, T]) Filter(predicate func(element T) bool) Stream[S, T] {
 	if predicate(s.Value) {
 		return s
 	}
-	return &EmptyStream[T]{}
+	return &EmptyStream[S, T]{}
 }
 
-func (s *SingletonStream[T]) Reduce(func(_, _ T) T) (T, bool) {
+func (s *SingletonStream[S, T]) Reduce(func(_, _ T) T) (T, bool) {
 	return s.Value, true
 }
