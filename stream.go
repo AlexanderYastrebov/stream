@@ -43,6 +43,49 @@ func (it *sliceIterator[T]) advance(action func(T)) bool {
 	return len(it.x) > 0
 }
 
+type sink[T any] interface {
+	begin()
+	end()
+	accept(T)
+}
+
+type chainedSink[T, OUT any] struct {
+	downstream sink[OUT]
+	acceptFunc func(T)
+}
+
+func (cs *chainedSink[T, OUT]) begin() {
+	cs.downstream.begin()
+}
+
+func (cs *chainedSink[T, OUT]) end() {
+	cs.downstream.end()
+}
+
+func (cs *chainedSink[T, OUT]) accept(x T) {
+	cs.acceptFunc(x)
+}
+
+func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
+	return &chainedSink[T, R]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			s.accept(mapper(x))
+		},
+	}
+}
+
+func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			if predicate(x) {
+				s.accept(x)
+			}
+		},
+	}
+}
+
 type EmptyStream[T any] struct{}
 
 func (es *EmptyStream[T]) Filter(func(T) bool) Stream[T] {
