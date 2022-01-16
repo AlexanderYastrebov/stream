@@ -10,7 +10,8 @@ func Of[T any](x ...T) Stream[T, T] {
 }
 
 func Slice[T any](x []T) Stream[T, T] {
-	return nil
+	it := &sliceIterator[T]{x}
+	return head[T](it)
 }
 
 func Filter[S, T any](s Stream[S, T], predicate func(element T) bool) Stream[S, T] {

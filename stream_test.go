@@ -35,9 +35,7 @@ func TestChainedSink(t *testing.T) {
 }
 
 func TestPipeline(t *testing.T) {
-	p := head[string](nil)
-
-	q := p.
+	q := Of("_").
 		Filter(func(s string) bool { return true })
 
 	r := Map(q, func(s string) int { return len(s) }).
@@ -65,11 +63,7 @@ func TestPipeline(t *testing.T) {
 }
 
 func TestReduce(t *testing.T) {
-	in := []string{"a", "bb", "ccc", "dddd"}
-	it := &sliceIterator[string]{in}
-	p := head[string](it)
-
-	q := p.
+	q := Of("a", "bb", "ccc", "dddd").
 		Filter(func(s string) bool { return len(s) > 1 })
 
 	r := Map(q, func(s string) int { return len(s) })
