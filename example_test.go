@@ -2,28 +2,16 @@ package stream_test
 
 import (
 	"fmt"
-	_ "github.com/AlexanderYastrebov/stream"
-	"strings"
-	_ "testing"
+
+	"github.com/AlexanderYastrebov/stream"
 )
 
-type prefixMatcher struct {
-	prefix string
-}
+func ExampleCount() {
+	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		Filter(func(s string) bool { return len(s) > 2 }).
+		Count()
+	fmt.Println(n)
 
-func (m *prefixMatcher) matches(s string) bool {
-	return strings.HasPrefix(s, m.prefix)
-}
-
-func isHe(s string) bool {
-	return strings.HasPrefix(s, "he")
-}
-
-func length(s string) int {
-	return len(s)
-}
-
-func ExampleStream() {
-	fmt.Printf("hello")
-	// Output: hello
+	// Output:
+	// 3
 }

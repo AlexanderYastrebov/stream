@@ -3,6 +3,7 @@ package stream
 type Stream[S, T any] interface {
 	Filter(predicate func(element T) bool) Stream[S, T]
 	Reduce(accumulator func(a, b T) T) (T, bool)
+	Count() int
 }
 
 func Of[T any](x ...T) Stream[T, T] {
@@ -108,6 +109,14 @@ type pipeline[S, OUT any] struct {
 	opWrapSink func(sink[OUT], func(iterator[S], sink[S]))
 }
 
+func head[S any](it iterator[S]) *pipeline[S, S] {
+	return &pipeline[S, S]{
+		opWrapSink: func(s sink[S], done func(iterator[S], sink[S])) {
+			done(it, s)
+		},
+	}
+}
+
 func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		opWrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
@@ -131,10 +140,7 @@ func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
 	return a.value, a.foundAny
 }
 
-func head[S any](it iterator[S]) *pipeline[S, S] {
-	return &pipeline[S, S]{
-		opWrapSink: func(s sink[S], done func(iterator[S], sink[S])) {
-			done(it, s)
-		},
-	}
+func (p *pipeline[S, OUT]) Count() int {
+	count, _ := Map[S, OUT, int](p, func(_ OUT) int { return 1 }).Reduce(func(a, b int) int { return a + b })
+	return count
 }
