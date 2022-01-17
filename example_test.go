@@ -45,6 +45,17 @@ func ExampleSkipLimit() {
 	// 0
 }
 
+func ExampleForEach() {
+	stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		Filter(func(s string) bool { return len(s) > 2 }).
+		ForEach(func(s string) { fmt.Println(s) })
+
+	// Output:
+	// ccc
+	// dddd
+	// eeeee
+}
+
 func ExampleMapReduce() {
 	s := stream.Of("a", "bb", "ccc", "dddd")
 	n, ok := stream.Map(s, func(s string) int { return len(s) }).

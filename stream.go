@@ -7,6 +7,7 @@ type Stream[S, T any] interface {
 	Limit(n int) Stream[S, T]
 	Skip(n int) Stream[S, T]
 
+	ForEach(consumer func(element T))
 	Reduce(accumulator func(a, b T) T) (T, bool)
 	AllMatch(predicate func(element T) bool) bool
 	AnyMatch(predicate func(element T) bool) bool
@@ -222,6 +223,22 @@ func (p *pipeline[S, OUT]) Skip(n int) Stream[S, OUT] {
 			p.wrapSink(skipWrapSink(s, n), done)
 		},
 	}
+}
+
+type consumerSink[T any] struct {
+	acceptFunc func(element T)
+}
+
+func (cs *consumerSink[T]) begin()     {}
+func (cs *consumerSink[T]) end()       {}
+func (cs *consumerSink[T]) done() bool { return false }
+func (cs *consumerSink[T]) accept(x T) { cs.acceptFunc(x) }
+
+func (p *pipeline[S, OUT]) ForEach(consumer func(OUT)) {
+	cs := &consumerSink[OUT]{consumer}
+	var s sink[OUT] = cs
+
+	evaluate(p, s)
 }
 
 func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
