@@ -54,7 +54,7 @@ func TestPipeline(t *testing.T) {
 
 	var x sink[string]
 
-	rr.opWrapSink(s, func(_ iterator[string], s sink[string]) {
+	rr.wrapSink(s, func(_ iterator[string], s sink[string]) {
 		x = s
 	})
 

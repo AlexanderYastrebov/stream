@@ -22,8 +22,8 @@ func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
 		panic("unexpected stream type")
 	}
 	return &pipeline[S, R]{
-		opWrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
-			p.opWrapSink(mapWrapSink(s, mapper), done)
+		wrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
+			p.wrapSink(mapWrapSink(s, mapper), done)
 		},
 	}
 }
@@ -38,7 +38,7 @@ func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) 
 	var s sink[S]
 	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
 
-	p.opWrapSink(a, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
+	p.wrapSink(a, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
 
 	s.begin()
 	for it.advance(s.accept) {
@@ -121,12 +121,12 @@ func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 }
 
 type pipeline[S, OUT any] struct {
-	opWrapSink func(sink[OUT], func(iterator[S], sink[S]))
+	wrapSink func(sink[OUT], func(iterator[S], sink[S]))
 }
 
 func head[S any](it iterator[S]) *pipeline[S, S] {
 	return &pipeline[S, S]{
-		opWrapSink: func(s sink[S], done func(iterator[S], sink[S])) {
+		wrapSink: func(s sink[S], done func(iterator[S], sink[S])) {
 			done(it, s)
 		},
 	}
@@ -134,8 +134,8 @@ func head[S any](it iterator[S]) *pipeline[S, S] {
 
 func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
-		opWrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.opWrapSink(filterWrapSink(s, predicate), done)
+		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
+			p.wrapSink(filterWrapSink(s, predicate), done)
 		},
 	}
 }
