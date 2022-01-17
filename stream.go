@@ -50,7 +50,7 @@ func evaluate[S, T any](p *pipeline[S, T], out sink[T]) {
 	var s sink[S]
 	p.wrapSink(out, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
 	s.begin()
-	for it.advance(s.accept) {
+	for !s.done() && it.advance(s.accept) {
 	}
 	s.end()
 }
@@ -74,6 +74,7 @@ func (it *sliceIterator[T]) advance(action func(T)) bool {
 type sink[T any] interface {
 	begin()
 	end()
+	done() bool
 	accept(T)
 }
 
@@ -90,6 +91,10 @@ func (cs *chainedSink[T, OUT]) end() {
 	cs.downstream.end()
 }
 
+func (cs *chainedSink[T, OUT]) done() bool {
+	return cs.downstream.done()
+}
+
 func (cs *chainedSink[T, OUT]) accept(x T) {
 	cs.acceptFunc(x)
 }
@@ -99,9 +104,9 @@ type accumulatorSink[T, A any] struct {
 	accumulator func(a A, b T) A
 }
 
-func (as *accumulatorSink[T, A]) begin() {}
-
-func (as *accumulatorSink[T, A]) end() {}
+func (as *accumulatorSink[T, A]) begin()     {}
+func (as *accumulatorSink[T, A]) end()       {}
+func (as *accumulatorSink[T, A]) done() bool { return false }
 
 func (as *accumulatorSink[T, A]) accept(x T) {
 	as.value = as.accumulator(as.value, x)
