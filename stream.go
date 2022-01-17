@@ -16,20 +16,16 @@ func Slice[T any](x []T) Stream[T, T] {
 	return head[T](it)
 }
 
-func Filter[S, T any](s Stream[S, T], predicate func(element T) bool) Stream[S, T] {
-	return s.Filter(predicate)
-}
-
-func Map[S, T, R any](s Stream[S, T], mapper func(element T) R) Stream[S, R] {
-	switch p := s.(type) {
-	case *pipeline[S, T]:
-		return &pipeline[S, R]{
-			opWrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
-				p.opWrapSink(mapWrapSink(s, mapper), done)
-			},
-		}
+func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
+	p, ok := st.(*pipeline[S, T])
+	if !ok {
+		panic("unexpected stream type")
 	}
-	return nil
+	return &pipeline[S, R]{
+		opWrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
+			p.opWrapSink(mapWrapSink(s, mapper), done)
+		},
+	}
 }
 
 func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) A {
