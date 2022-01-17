@@ -5,7 +5,7 @@ type Stream[S, T any] interface {
 	Peek(consumer func(element T)) Stream[S, T]
 
 	Reduce(accumulator func(a, b T) T) (T, bool)
-	//FindFirst() (T, bool)
+	FindFirst() (T, bool)
 	Count() int
 	ToSlice() []T
 }
@@ -179,9 +179,30 @@ func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
 	}), foundAny
 }
 
-// func (p *pipeline[S, OUT]) FindFirst() (OUT, bool) {
-// 	return zero, false
-// }
+type findSink[T any] struct {
+	value    T
+	hasValue bool
+}
+
+func (fs *findSink[T]) begin()     {}
+func (fs *findSink[T]) end()       {}
+func (fs *findSink[T]) done() bool { return fs.hasValue }
+
+func (fs *findSink[T]) accept(x T) {
+	if !fs.hasValue {
+		fs.value = x
+		fs.hasValue = true
+	}
+}
+
+func (p *pipeline[S, OUT]) FindFirst() (OUT, bool) {
+	fs := &findSink[OUT]{}
+	var s sink[OUT] = fs
+
+	evaluate(p, s)
+
+	return fs.value, fs.hasValue
+}
 
 func (p *pipeline[S, OUT]) Count() int {
 	return Reduce[S, OUT, int](p, 0, func(a int, _ OUT) int { return a + 1 })
