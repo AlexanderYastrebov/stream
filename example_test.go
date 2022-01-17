@@ -99,6 +99,22 @@ func ExampleAllMatch() {
 	// true
 }
 
+func ExampleAnyMatch() {
+	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		AnyMatch(func(s string) bool { return len(s) > 3 })
+
+	fmt.Println(m)
+
+	m = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		AnyMatch(func(s string) bool { return len(s) > 10 })
+
+	fmt.Println(m)
+
+	// Output:
+	// true
+	// false
+}
+
 func ExampleFindFirst() {
 	x, ok := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
