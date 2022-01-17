@@ -7,6 +7,7 @@ type Stream[S, T any] interface {
 	Reduce(accumulator func(a, b T) T) (T, bool)
 	AllMatch(predicate func(element T) bool) bool
 	AnyMatch(predicate func(element T) bool) bool
+	NoneMatch(predicate func(element T) bool) bool
 	FindFirst() (T, bool)
 	Count() int
 	ToSlice() []T
@@ -219,6 +220,19 @@ func (p *pipeline[S, OUT]) AnyMatch(predicate func(element OUT) bool) bool {
 		predicate:   predicate,
 		stopOnMatch: true,
 		stopValue:   true,
+	}
+	var s sink[OUT] = ms
+
+	evaluate(p, s)
+
+	return ms.value
+}
+
+func (p *pipeline[S, OUT]) NoneMatch(predicate func(element OUT) bool) bool {
+	ms := &matchSink[OUT]{
+		predicate:   predicate,
+		stopOnMatch: true,
+		stopValue:   false,
 	}
 	var s sink[OUT] = ms
 

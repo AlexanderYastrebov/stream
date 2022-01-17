@@ -115,6 +115,22 @@ func ExampleAnyMatch() {
 	// false
 }
 
+func ExampleNoneMatch() {
+	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		NoneMatch(func(s string) bool { return len(s) > 3 })
+
+	fmt.Println(m)
+
+	m = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		NoneMatch(func(s string) bool { return len(s) > 10 })
+
+	fmt.Println(m)
+
+	// Output:
+	// false
+	// true
+}
+
 func ExampleFindFirst() {
 	x, ok := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
