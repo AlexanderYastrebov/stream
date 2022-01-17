@@ -86,6 +86,7 @@ type sink[T any] interface {
 
 type chainedSink[T, OUT any] struct {
 	downstream sink[OUT]
+	doneFunc   func() bool
 	acceptFunc func(T)
 }
 
@@ -98,6 +99,9 @@ func (cs *chainedSink[T, OUT]) end() {
 }
 
 func (cs *chainedSink[T, OUT]) done() bool {
+	if cs.doneFunc != nil {
+		return cs.doneFunc()
+	}
 	return cs.downstream.done()
 }
 
@@ -148,6 +152,34 @@ func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
 	}
 }
 
+func limitWrapSink[T any](s sink[T], n int) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		doneFunc: func() bool {
+			return n <= 0 || s.done()
+		},
+		acceptFunc: func(x T) {
+			if n > 0 {
+				s.accept(x)
+				n--
+			}
+		},
+	}
+}
+
+func skipWrapSink[T any](s sink[T], n int) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			if n > 0 {
+				n--
+				return
+			}
+			s.accept(x)
+		},
+	}
+}
+
 type pipeline[S, OUT any] struct {
 	wrapSink func(sink[OUT], func(iterator[S], sink[S]))
 }
@@ -176,51 +208,18 @@ func (p *pipeline[S, OUT]) Peek(consumer func(OUT)) Stream[S, OUT] {
 	}
 }
 
-type limitSink[T any] struct {
-	downstream sink[T]
-	n          int
-}
-
-func (ls *limitSink[T]) begin()     { ls.downstream.begin() }
-func (ls *limitSink[T]) end()       { ls.downstream.end() }
-func (ls *limitSink[T]) done() bool { return ls.n <= 0 || ls.downstream.done() }
-
-func (ls *limitSink[T]) accept(x T) {
-	if ls.n > 0 {
-		ls.downstream.accept(x)
-		ls.n--
-	}
-}
-
 func (p *pipeline[S, OUT]) Limit(n int) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(&limitSink[OUT]{downstream: s, n: n}, done)
+			p.wrapSink(limitWrapSink(s, n), done)
 		},
 	}
-}
-
-type skipSink[T any] struct {
-	downstream sink[T]
-	n          int
-}
-
-func (s *skipSink[T]) begin()     { s.downstream.begin() }
-func (s *skipSink[T]) end()       { s.downstream.end() }
-func (s *skipSink[T]) done() bool { return s.downstream.done() }
-
-func (s *skipSink[T]) accept(x T) {
-	if s.n > 0 {
-		s.n--
-		return
-	}
-	s.downstream.accept(x)
 }
 
 func (p *pipeline[S, OUT]) Skip(n int) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(&skipSink[OUT]{downstream: s, n: n}, done)
+			p.wrapSink(skipWrapSink(s, n), done)
 		},
 	}
 }
