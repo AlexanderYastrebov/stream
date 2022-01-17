@@ -52,3 +52,29 @@ func ExampleAllButLast() {
 	// bars: 2
 	// [foo baz goo bar gaz]
 }
+
+func ExampleGroupBy() {
+	s := stream.Slice([]struct {
+		name  string
+		grade string
+	}{
+		{"Alice", "A"},
+		{"Bob", "B"},
+		{"Charlie", "C"},
+		{"Alan", "A"},
+		{"Barbie", "B"},
+		{"Carl", "C"},
+	})
+
+	g := stream.Reduce(s, make(map[string][]string), func(m map[string][]string, e struct {
+		name  string
+		grade string
+	}) map[string][]string {
+		m[e.grade] = append(m[e.grade], e.name)
+		return m
+	})
+	fmt.Println(g)
+
+	// Output:
+	// map[A:[Alice Alan] B:[Bob Barbie] C:[Charlie Carl]]
+}
