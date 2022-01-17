@@ -203,11 +203,7 @@ func (ms *matchSink[T]) accept(x T) {
 }
 
 func (p *pipeline[S, OUT]) AllMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{
-		predicate:   predicate,
-		stopOnMatch: false,
-		stopValue:   false,
-	}
+	ms := &matchSink[OUT]{predicate: predicate, stopOnMatch: false, stopValue: false}
 	var s sink[OUT] = ms
 
 	evaluate(p, s)
@@ -216,11 +212,7 @@ func (p *pipeline[S, OUT]) AllMatch(predicate func(element OUT) bool) bool {
 }
 
 func (p *pipeline[S, OUT]) AnyMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{
-		predicate:   predicate,
-		stopOnMatch: true,
-		stopValue:   true,
-	}
+	ms := &matchSink[OUT]{predicate: predicate, stopOnMatch: true, stopValue: true}
 	var s sink[OUT] = ms
 
 	evaluate(p, s)
@@ -229,11 +221,7 @@ func (p *pipeline[S, OUT]) AnyMatch(predicate func(element OUT) bool) bool {
 }
 
 func (p *pipeline[S, OUT]) NoneMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{
-		predicate:   predicate,
-		stopOnMatch: true,
-		stopValue:   false,
-	}
+	ms := &matchSink[OUT]{predicate: predicate, stopOnMatch: true, stopValue: false}
 	var s sink[OUT] = ms
 
 	evaluate(p, s)
