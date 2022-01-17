@@ -5,6 +5,7 @@ type Stream[S, T any] interface {
 	Peek(consumer func(element T)) Stream[S, T]
 
 	Reduce(accumulator func(a, b T) T) (T, bool)
+	//FindFirst() (T, bool)
 	Count() int
 	ToSlice() []T
 }
@@ -36,18 +37,22 @@ func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) 
 		panic("unexpected stream type")
 	}
 
+	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
+	var aa sink[T] = a
+
+	evaluate(p, aa)
+
+	return a.value
+}
+
+func evaluate[S, T any](p *pipeline[S, T], out sink[T]) {
 	var it iterator[S]
 	var s sink[S]
-	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
-
-	p.wrapSink(a, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
-
+	p.wrapSink(out, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
 	s.begin()
 	for it.advance(s.accept) {
 	}
 	s.end()
-
-	return a.value
 }
 
 type iterator[T any] interface {
@@ -168,6 +173,10 @@ func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
 		return accumulator(a, e)
 	}), foundAny
 }
+
+// func (p *pipeline[S, OUT]) FindFirst() (OUT, bool) {
+// 	return zero, false
+// }
 
 func (p *pipeline[S, OUT]) Count() int {
 	return Reduce[S, OUT, int](p, 0, func(a int, _ OUT) int { return a + 1 })
