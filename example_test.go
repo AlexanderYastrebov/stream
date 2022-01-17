@@ -83,6 +83,22 @@ func ExampleGroupBy() {
 	// map[A:[Alice Alan] B:[Bob Barbie] C:[Charlie Carl]]
 }
 
+func ExampleAllMatch() {
+	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		AllMatch(func(s string) bool { return len(s) > 3 })
+
+	fmt.Println(m)
+
+	m = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		AllMatch(func(s string) bool { return len(s) > 0 })
+
+	fmt.Println(m)
+
+	// Output:
+	// false
+	// true
+}
+
 func ExampleFindFirst() {
 	x, ok := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
