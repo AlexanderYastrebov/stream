@@ -21,6 +21,29 @@ func ExampleFilter() {
 	// 3
 }
 
+func ExampleLimit() {
+	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		Limit(3).
+		Peek(func(s string) { fmt.Println(s) }).
+		Count()
+
+	fmt.Println(n)
+
+	n = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		Limit(0).
+		Peek(func(s string) { fmt.Println(s) }).
+		Count()
+
+	fmt.Println(n)
+
+	// Output:
+	// a
+	// bb
+	// ccc
+	// 3
+	// 0
+}
+
 func ExampleMapReduce() {
 	s := stream.Of("a", "bb", "ccc", "dddd")
 	n, ok := stream.Map(s, func(s string) int { return len(s) }).

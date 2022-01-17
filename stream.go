@@ -4,6 +4,8 @@ type Stream[S, T any] interface {
 	Filter(predicate func(element T) bool) Stream[S, T]
 	Peek(consumer func(element T)) Stream[S, T]
 
+	Limit(n int) Stream[S, T]
+
 	Reduce(accumulator func(a, b T) T) (T, bool)
 	AllMatch(predicate func(element T) bool) bool
 	AnyMatch(predicate func(element T) bool) bool
@@ -169,6 +171,30 @@ func (p *pipeline[S, OUT]) Peek(consumer func(OUT)) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
 			p.wrapSink(peekWrapSink(s, consumer), done)
+		},
+	}
+}
+
+type limitSink[T any] struct {
+	downstream sink[T]
+	n          int
+}
+
+func (ls *limitSink[T]) begin()     { ls.downstream.begin() }
+func (ls *limitSink[T]) end()       { ls.downstream.end() }
+func (ls *limitSink[T]) done() bool { return ls.n <= 0 || ls.downstream.done() }
+
+func (ls *limitSink[T]) accept(x T) {
+	if ls.n > 0 {
+		ls.downstream.accept(x)
+		ls.n--
+	}
+}
+
+func (p *pipeline[S, OUT]) Limit(n int) Stream[S, OUT] {
+	return &pipeline[S, OUT]{
+		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
+			p.wrapSink(&limitSink[OUT]{downstream: s, n: n}, done)
 		},
 	}
 }
