@@ -4,6 +4,7 @@ type Stream[S, T any] interface {
 	Filter(predicate func(element T) bool) Stream[S, T]
 	Reduce(accumulator func(a, b T) T) (T, bool)
 	Count() int
+	ToSlice() []T
 }
 
 func Of[T any](x ...T) Stream[T, T] {
@@ -29,6 +30,26 @@ func Map[S, T, R any](s Stream[S, T], mapper func(element T) R) Stream[S, R] {
 		}
 	}
 	return nil
+}
+
+func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) A {
+	p, ok := st.(*pipeline[S, T])
+	if !ok {
+		panic("unexpected stream type")
+	}
+
+	var it iterator[S]
+	var s sink[S]
+	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
+
+	p.opWrapSink(a, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
+
+	s.begin()
+	for it.advance(s.accept) {
+	}
+	s.end()
+
+	return a.value
 }
 
 type iterator[T any] interface {
@@ -70,19 +91,17 @@ func (cs *chainedSink[T, OUT]) accept(x T) {
 	cs.acceptFunc(x)
 }
 
-type accumuatorSink[T any] struct {
-	value       T
-	foundAny    bool
-	accumulator func(a, b T) T
+type accumulatorSink[T, A any] struct {
+	value       A
+	accumulator func(a A, b T) A
 }
 
-func (as *accumuatorSink[T]) begin() {}
+func (as *accumulatorSink[T, A]) begin() {}
 
-func (as *accumuatorSink[T]) end() {}
+func (as *accumulatorSink[T, A]) end() {}
 
-func (as *accumuatorSink[T]) accept(x T) {
+func (as *accumulatorSink[T, A]) accept(x T) {
 	as.value = as.accumulator(as.value, x)
-	as.foundAny = true
 }
 
 func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
@@ -126,21 +145,19 @@ func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 }
 
 func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
-	var it iterator[S]
-	var s sink[S]
-	a := &accumuatorSink[OUT]{accumulator: accumulator}
-
-	p.opWrapSink(a, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
-
-	s.begin()
-	for it.advance(s.accept) {
-	}
-	s.end()
-
-	return a.value, a.foundAny
+	var zero OUT
+	foundAny := false
+	return Reduce[S, OUT, OUT](p, zero, func(a OUT, e OUT) OUT {
+		foundAny = true
+		return accumulator(a, e)
+	}), foundAny
 }
 
 func (p *pipeline[S, OUT]) Count() int {
 	count, _ := Map[S, OUT, int](p, func(_ OUT) int { return 1 }).Reduce(func(a, b int) int { return a + b })
 	return count
+}
+
+func (p *pipeline[S, OUT]) ToSlice() []OUT {
+	return Reduce[S, OUT, []OUT](p, nil, func(a []OUT, e OUT) []OUT { return append(a, e) })
 }

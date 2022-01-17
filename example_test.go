@@ -15,3 +15,28 @@ func ExampleCount() {
 	// Output:
 	// 3
 }
+
+func ExampleAllButLast() {
+	input := []string{"foo", "bar", "baz", "goo", "bar", "gaz"}
+	bars := stream.Slice(input).
+		Filter(func(s string) bool { return s == "bar" }).
+		Count()
+	fmt.Println("bars:", bars)
+
+	result := stream.Slice(input).
+		Filter(func(s string) bool {
+			if bars > 1 && s == "bar" {
+				bars--
+				return false
+			} else {
+				return true
+			}
+		}).
+		ToSlice()
+
+	fmt.Println(result)
+
+	// Output:
+	// bars: 2
+	// [foo baz goo bar gaz]
+}
