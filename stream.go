@@ -183,9 +183,9 @@ func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
 }
 
 type matchSink[T any] struct {
-	predicate   func(element T) bool
-	stopOnMatch bool
-	stopValue   bool
+	predicate func(element T) bool
+	stopWhen  bool
+	stopValue bool
 
 	value    bool
 	hasValue bool
@@ -196,14 +196,14 @@ func (ms *matchSink[T]) end()       {}
 func (ms *matchSink[T]) done() bool { return ms.hasValue }
 
 func (ms *matchSink[T]) accept(x T) {
-	if !ms.hasValue && ms.predicate(x) == ms.stopOnMatch {
+	if !ms.hasValue && ms.predicate(x) == ms.stopWhen {
 		ms.value = ms.stopValue
 		ms.hasValue = true
 	}
 }
 
 func (p *pipeline[S, OUT]) AllMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{predicate: predicate, stopOnMatch: false, stopValue: false}
+	ms := &matchSink[OUT]{predicate: predicate, stopWhen: false, stopValue: false}
 	var s sink[OUT] = ms
 
 	evaluate(p, s)
@@ -212,7 +212,7 @@ func (p *pipeline[S, OUT]) AllMatch(predicate func(element OUT) bool) bool {
 }
 
 func (p *pipeline[S, OUT]) AnyMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{predicate: predicate, stopOnMatch: true, stopValue: true}
+	ms := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: true}
 	var s sink[OUT] = ms
 
 	evaluate(p, s)
@@ -221,7 +221,7 @@ func (p *pipeline[S, OUT]) AnyMatch(predicate func(element OUT) bool) bool {
 }
 
 func (p *pipeline[S, OUT]) NoneMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{predicate: predicate, stopOnMatch: true, stopValue: false}
+	ms := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: false}
 	var s sink[OUT] = ms
 
 	evaluate(p, s)
