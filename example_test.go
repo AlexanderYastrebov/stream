@@ -10,10 +10,22 @@ func ExampleCount() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
 		Count()
+
 	fmt.Println(n)
 
 	// Output:
 	// 3
+}
+
+func ExampleMapReduce() {
+	s := stream.Of("a", "bb", "ccc", "dddd")
+	n, ok := stream.Map(s, func(s string) int { return len(s) }).
+		Reduce(func(a, b int) int { return a + b })
+
+	fmt.Println(n, ok)
+
+	// Output:
+	// 10 true
 }
 
 func ExampleAllButLast() {

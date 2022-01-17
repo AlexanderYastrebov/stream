@@ -61,20 +61,3 @@ func TestPipeline(t *testing.T) {
 	x.accept("test1")
 	x.accept("test22")
 }
-
-func TestReduce(t *testing.T) {
-	q := Of("a", "bb", "ccc", "dddd").
-		Filter(func(s string) bool { return len(s) > 1 })
-
-	r := Map(q, func(s string) int { return len(s) })
-
-	x, ok := r.Reduce(func(a, b int) int { return a + b })
-
-	t.Log(x, ok)
-	if x != 9 {
-		t.Errorf("expected 9, got: %d", x)
-	}
-	if !ok {
-		t.Errorf("expected ok")
-	}
-}
