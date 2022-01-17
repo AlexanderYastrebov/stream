@@ -21,8 +21,9 @@ func ExampleFilter() {
 	// 3
 }
 
-func ExampleLimit() {
+func ExampleSkipLimit() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		Skip(1).
 		Limit(3).
 		Peek(func(s string) { fmt.Println(s) }).
 		Count()
@@ -37,9 +38,9 @@ func ExampleLimit() {
 	fmt.Println(n)
 
 	// Output:
-	// a
 	// bb
 	// ccc
+	// dddd
 	// 3
 	// 0
 }
