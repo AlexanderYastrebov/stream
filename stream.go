@@ -154,8 +154,7 @@ func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
 }
 
 func (p *pipeline[S, OUT]) Count() int {
-	count, _ := Map[S, OUT, int](p, func(_ OUT) int { return 1 }).Reduce(func(a, b int) int { return a + b })
-	return count
+	return Reduce[S, OUT, int](p, 0, func(a int, _ OUT) int { return a + 1 })
 }
 
 func (p *pipeline[S, OUT]) ToSlice() []OUT {
