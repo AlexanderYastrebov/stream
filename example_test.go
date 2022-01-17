@@ -6,14 +6,18 @@ import (
 	"github.com/AlexanderYastrebov/stream"
 )
 
-func ExampleCount() {
+func ExampleFilter() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
+		Peek(func(s string) { fmt.Println(s) }).
 		Count()
 
 	fmt.Println(n)
 
 	// Output:
+	// ccc
+	// dddd
+	// eeeee
 	// 3
 }
 

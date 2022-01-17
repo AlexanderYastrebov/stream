@@ -2,6 +2,8 @@ package stream
 
 type Stream[S, T any] interface {
 	Filter(predicate func(element T) bool) Stream[S, T]
+	Peek(consumer func(element T)) Stream[S, T]
+
 	Reduce(accumulator func(a, b T) T) (T, bool)
 	Count() int
 	ToSlice() []T
@@ -120,6 +122,16 @@ func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 	}
 }
 
+func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			consumer(x)
+			s.accept(x)
+		},
+	}
+}
+
 type pipeline[S, OUT any] struct {
 	wrapSink func(sink[OUT], func(iterator[S], sink[S]))
 }
@@ -136,6 +148,14 @@ func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
 			p.wrapSink(filterWrapSink(s, predicate), done)
+		},
+	}
+}
+
+func (p *pipeline[S, OUT]) Peek(consumer func(OUT)) Stream[S, OUT] {
+	return &pipeline[S, OUT]{
+		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
+			p.wrapSink(peekWrapSink(s, consumer), done)
 		},
 	}
 }
