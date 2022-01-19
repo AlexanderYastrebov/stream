@@ -67,6 +67,18 @@ func ExampleMapReduce() {
 	// 10 true
 }
 
+func ExampleDistinctComparable() {
+	stream.Of("a", "bb", "bb", "a", "ccc", "a", "dddd").
+		Distinct(stream.Comparable[string]()).
+		ForEach(func(s string) { fmt.Println(s) })
+
+	// Output:
+	// a
+	// bb
+	// ccc
+	// dddd
+}
+
 func ExampleAllButLast() {
 	input := []string{"foo", "bar", "baz", "goo", "bar", "gaz"}
 	bars := stream.Slice(input).
