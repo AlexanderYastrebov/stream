@@ -244,6 +244,21 @@ func Comparable[T comparable]() Observer[T] {
 	return make(comparableObserver[T])
 }
 
+type anyObserver[T any, C comparable] struct {
+	delegate Observer[C]
+	mapper   func(T) C
+}
+
+func (o anyObserver[T, C]) Observe(x T) bool {
+	return o.delegate.Observe(o.mapper(x))
+}
+
+func ToComparable[T any, C comparable](mapper func(T) C) Observer[T] {
+	return &anyObserver[T, C]{delegate: Comparable[C](), mapper: mapper}
+}
+
+func Identity[T any](x T) T { return x }
+
 type distinctSink[T any] struct {
 	downstream sink[T]
 	observer   Observer[T]

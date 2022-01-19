@@ -2,6 +2,7 @@ package stream_test
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/AlexanderYastrebov/stream"
 )
@@ -77,6 +78,28 @@ func ExampleDistinctComparable() {
 	// bb
 	// ccc
 	// dddd
+}
+
+func ExampleDistinctAny() {
+	concat := func(s []string) string {
+		return strings.Join(s, " ")
+	}
+
+	stream.Of([]string{"a"},
+		[]string{"b", "b"},
+		[]string{"b", "b"},
+		[]string{"a"},
+		[]string{"c", "c", "c"},
+		[]string{"a"},
+		[]string{"d", "d", "d", "d"}).
+		Distinct(stream.ToComparable(concat)).
+		ForEach(func(s []string) { fmt.Println(s) })
+
+	// Output:
+	// [a]
+	// [b b]
+	// [c c c]
+	// [d d d d]
 }
 
 func ExampleAllButLast() {
