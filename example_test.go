@@ -7,10 +7,14 @@ import (
 	"github.com/AlexanderYastrebov/stream"
 )
 
+func printString(s string) {
+	fmt.Println(s)
+}
+
 func ExampleFilter() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
-		Peek(func(s string) { fmt.Println(s) }).
+		Peek(printString).
 		Count()
 
 	fmt.Println(n)
@@ -26,14 +30,14 @@ func ExampleSkipLimit() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Skip(1).
 		Limit(3).
-		Peek(func(s string) { fmt.Println(s) }).
+		Peek(printString).
 		Count()
 
 	fmt.Println(n)
 
 	n = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Limit(0).
-		Peek(func(s string) { fmt.Println(s) }).
+		Peek(printString).
 		Count()
 
 	fmt.Println(n)
@@ -49,7 +53,7 @@ func ExampleSkipLimit() {
 func ExampleForEach() {
 	stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
-		ForEach(func(s string) { fmt.Println(s) })
+		ForEach(printString)
 
 	// Output:
 	// ccc
@@ -71,7 +75,7 @@ func ExampleMapReduce() {
 func ExampleDistinctComparable() {
 	stream.Of("a", "bb", "bb", "a", "ccc", "a", "dddd").
 		Distinct(stream.Comparable[string]()).
-		ForEach(func(s string) { fmt.Println(s) })
+		ForEach(printString)
 
 	// Output:
 	// a
@@ -85,7 +89,8 @@ func ExampleDistinctAny() {
 		return strings.Join(s, " ")
 	}
 
-	stream.Of([]string{"a"},
+	stream.Of(
+		[]string{"a"},
 		[]string{"b", "b"},
 		[]string{"b", "b"},
 		[]string{"a"},
