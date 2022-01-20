@@ -15,6 +15,10 @@ func printInt(i int) {
 	fmt.Println(i)
 }
 
+func print[T any](x T) {
+	fmt.Println(x)
+}
+
 func ExampleGenerate() {
 	stream.Generate(func() string { return "a" }).
 		Limit(3).
@@ -36,6 +40,27 @@ func ExampleIterate() {
 	// 5
 	// 7
 	// 9
+}
+
+func ExampleFib() {
+	p := stream.Iterate([]int{0, 1}, func(x []int) []int {
+		return []int{x[1], x[0] + x[1]}
+	}).Limit(10)
+
+	stream.Map(p, func(x []int) int { return x[0] }).
+		ForEach(print[int])
+
+	// Output:
+	// 0
+	// 1
+	// 1
+	// 2
+	// 3
+	// 5
+	// 8
+	// 13
+	// 21
+	// 34
 }
 
 func ExampleFilter() {
