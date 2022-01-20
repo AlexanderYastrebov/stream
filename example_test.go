@@ -7,14 +7,6 @@ import (
 	"github.com/AlexanderYastrebov/stream"
 )
 
-func printString(s string) {
-	fmt.Println(s)
-}
-
-func printInt(i int) {
-	fmt.Println(i)
-}
-
 func print[T any](x T) {
 	fmt.Println(x)
 }
@@ -22,7 +14,7 @@ func print[T any](x T) {
 func ExampleGenerate() {
 	stream.Generate(func() string { return "a" }).
 		Limit(3).
-		ForEach(printString)
+		ForEach(print[string])
 
 	// Output:
 	// a
@@ -33,7 +25,7 @@ func ExampleGenerate() {
 func ExampleIterate() {
 	stream.Iterate(3, func(x int) int { return x + 2 }).
 		Limit(4).
-		ForEach(printInt)
+		ForEach(print[int])
 
 	// Output:
 	// 3
@@ -66,7 +58,7 @@ func ExampleFib() {
 func ExampleFilter() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
-		Peek(printString).
+		Peek(print[string]).
 		Count()
 
 	fmt.Println(n)
@@ -82,14 +74,14 @@ func ExampleSkipLimit() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Skip(1).
 		Limit(3).
-		Peek(printString).
+		Peek(print[string]).
 		Count()
 
 	fmt.Println(n)
 
 	n = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Limit(0).
-		Peek(printString).
+		Peek(print[string]).
 		Count()
 
 	fmt.Println(n)
@@ -105,7 +97,7 @@ func ExampleSkipLimit() {
 func ExampleForEach() {
 	stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
-		ForEach(printString)
+		ForEach(print[string])
 
 	// Output:
 	// ccc
@@ -127,7 +119,7 @@ func ExampleMapReduce() {
 func ExampleDistinct() {
 	stream.Of("a", "bb", "bb", "a", "ccc", "a", "dddd").
 		Filter(stream.Distinct[string]()).
-		ForEach(printString)
+		ForEach(print[string])
 
 	// Output:
 	// a
