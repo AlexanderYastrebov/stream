@@ -72,9 +72,9 @@ func ExampleMapReduce() {
 	// 10 true
 }
 
-func ExampleDistinctComparable() {
+func ExampleDistinct() {
 	stream.Of("a", "bb", "bb", "a", "ccc", "a", "dddd").
-		Distinct(stream.Comparable[string]()).
+		Filter(stream.Distinct[string]()).
 		ForEach(printString)
 
 	// Output:
@@ -84,7 +84,7 @@ func ExampleDistinctComparable() {
 	// dddd
 }
 
-func ExampleDistinctAny() {
+func ExampleDistinctUsing() {
 	concat := func(s []string) string {
 		return strings.Join(s, " ")
 	}
@@ -97,7 +97,7 @@ func ExampleDistinctAny() {
 		[]string{"c", "c", "c"},
 		[]string{"a"},
 		[]string{"d", "d", "d", "d"}).
-		Distinct(stream.ToComparable(concat)).
+		Filter(stream.DistinctUsing(concat)).
 		ForEach(func(s []string) { fmt.Println(s) })
 
 	// Output:

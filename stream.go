@@ -6,7 +6,6 @@ type Stream[S, T any] interface {
 
 	Limit(n int) Stream[S, T]
 	Skip(n int) Stream[S, T]
-	Distinct(Observer[T]) Stream[S, T]
 
 	ForEach(consumer func(element T))
 	Reduce(accumulator func(a, b T) T) (T, bool)
@@ -226,60 +225,24 @@ func (p *pipeline[S, OUT]) Skip(n int) Stream[S, OUT] {
 	}
 }
 
-type Observer[T any] interface {
-	Observe(T) bool
-}
+type observer[T comparable] map[T]struct{}
 
-type comparableObserver[T comparable] map[T]struct{}
-
-func (o comparableObserver[T]) Observe(x T) bool {
-	_, seen := o[x]
-	if !seen {
+func (o observer[T]) observe(x T) bool {
+	_, ok := o[x]
+	if !ok {
 		o[x] = struct{}{}
 	}
-	return seen
+	return !ok
 }
 
-func Comparable[T comparable]() Observer[T] {
-	return make(comparableObserver[T])
+func Distinct[T comparable]() func(T) bool {
+	o := make(observer[T])
+	return func(x T) bool { return o.observe(x) }
 }
 
-type anyObserver[T any, C comparable] struct {
-	delegate Observer[C]
-	mapper   func(T) C
-}
-
-func (o anyObserver[T, C]) Observe(x T) bool {
-	return o.delegate.Observe(o.mapper(x))
-}
-
-func ToComparable[T any, C comparable](mapper func(T) C) Observer[T] {
-	return &anyObserver[T, C]{delegate: Comparable[C](), mapper: mapper}
-}
-
-func Identity[T any](x T) T { return x }
-
-type distinctSink[T any] struct {
-	downstream sink[T]
-	observer   Observer[T]
-}
-
-func (ds *distinctSink[T]) begin()     { ds.downstream.begin() }
-func (ds *distinctSink[T]) done() bool { return ds.downstream.done() }
-func (ds *distinctSink[T]) end()       { ds.downstream.end() }
-
-func (ds *distinctSink[T]) accept(x T) {
-	if !ds.observer.Observe(x) {
-		ds.downstream.accept(x)
-	}
-}
-
-func (p *pipeline[S, OUT]) Distinct(observer Observer[OUT]) Stream[S, OUT] {
-	return &pipeline[S, OUT]{
-		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(&distinctSink[OUT]{downstream: s, observer: observer}, done)
-		},
-	}
+func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
+	o := make(observer[C])
+	return func(x T) bool { return o.observe(mapper(x)) }
 }
 
 type consumerSink[T any] struct {
