@@ -11,6 +11,10 @@ func printString(s string) {
 	fmt.Println(s)
 }
 
+func printInt(i int) {
+	fmt.Println(i)
+}
+
 func ExampleGenerate() {
 	stream.Generate(func() string { return "a" }).
 		Limit(3).
@@ -20,6 +24,18 @@ func ExampleGenerate() {
 	// a
 	// a
 	// a
+}
+
+func ExampleIterate() {
+	stream.Iterate(3, func(x int) int { return x + 2 }).
+		Limit(4).
+		ForEach(printInt)
+
+	// Output:
+	// 3
+	// 5
+	// 7
+	// 9
 }
 
 func ExampleFilter() {

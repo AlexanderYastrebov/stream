@@ -31,6 +31,11 @@ func Generate[T any](generator func() T) Stream[T, T] {
 	return head[T](it)
 }
 
+func Iterate[T any](seed T, operator func(T) T) Stream[T, T] {
+	it := &seedIterator[T]{seed, operator}
+	return head[T](it)
+}
+
 func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
 	p, ok := st.(*pipeline[S, T])
 	if !ok {
@@ -87,6 +92,17 @@ type generatorIterator[T any] func() T
 
 func (it generatorIterator[T]) advance(action func(T)) bool {
 	action(it())
+	return true
+}
+
+type seedIterator[T any] struct {
+	x        T
+	operator func(T) T
+}
+
+func (it *seedIterator[T]) advance(action func(T)) bool {
+	action(it.x)
+	it.x = it.operator(it.x)
 	return true
 }
 
