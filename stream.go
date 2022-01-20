@@ -26,6 +26,11 @@ func Slice[T any](x []T) Stream[T, T] {
 	return head[T](it)
 }
 
+func Generate[T any](generator func() T) Stream[T, T] {
+	it := generatorIterator[T](generator)
+	return head[T](it)
+}
+
 func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
 	p, ok := st.(*pipeline[S, T])
 	if !ok {
@@ -76,6 +81,13 @@ func (it *sliceIterator[T]) advance(action func(T)) bool {
 		it.x = it.x[1:]
 	}
 	return len(it.x) > 0
+}
+
+type generatorIterator[T any] func() T
+
+func (it generatorIterator[T]) advance(action func(T)) bool {
+	action(it())
+	return true
 }
 
 type sink[T any] interface {

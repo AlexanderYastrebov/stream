@@ -11,6 +11,17 @@ func printString(s string) {
 	fmt.Println(s)
 }
 
+func ExampleGenerate() {
+	stream.Generate(func() string { return "a" }).
+		Limit(3).
+		ForEach(printString)
+
+	// Output:
+	// a
+	// a
+	// a
+}
+
 func ExampleFilter() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
