@@ -74,20 +74,9 @@ func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) 
 	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
 	var aa sink[T] = a
 
-	evaluate(p, aa)
+	p.evaluate(aa)
 
 	return a.value
-}
-
-func evaluate[S, T any](p *pipeline[S, T], out sink[T]) {
-	p.wrapSink(out, copyInto[S])
-}
-
-func copyInto[T any](it iterator[T], s sink[T]) {
-	s.begin()
-	for !s.done() && it.advance(s.accept) {
-	}
-	s.end()
 }
 
 type iterator[T any] interface {
@@ -262,6 +251,17 @@ func head[S any](it iterator[S]) *pipeline[S, S] {
 	}
 }
 
+func (p *pipeline[S, T]) evaluate(out sink[T]) {
+	p.wrapSink(out, copyInto[S])
+}
+
+func copyInto[T any](it iterator[T], s sink[T]) {
+	s.begin()
+	for !s.done() && it.advance(s.accept) {
+	}
+	s.end()
+}
+
 func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
@@ -360,9 +360,7 @@ func (cs consumerSink[T]) done() bool { return false }
 func (cs consumerSink[T]) accept(x T) { cs(x) }
 
 func (p *pipeline[S, OUT]) ForEach(consumer func(OUT)) {
-	var s sink[OUT] = consumerSink[OUT](consumer)
-
-	evaluate(p, s)
+	p.evaluate(consumerSink[OUT](consumer))
 }
 
 func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
@@ -395,30 +393,27 @@ func (ms *matchSink[T]) accept(x T) {
 }
 
 func (p *pipeline[S, OUT]) AllMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{predicate: predicate, stopWhen: false, stopValue: false}
-	var s sink[OUT] = ms
+	s := &matchSink[OUT]{predicate: predicate, stopWhen: false, stopValue: false}
 
-	evaluate(p, s)
+	p.evaluate(s)
 
-	return ms.value
+	return s.value
 }
 
 func (p *pipeline[S, OUT]) AnyMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: true}
-	var s sink[OUT] = ms
+	s := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: true}
 
-	evaluate(p, s)
+	p.evaluate(s)
 
-	return ms.value
+	return s.value
 }
 
 func (p *pipeline[S, OUT]) NoneMatch(predicate func(element OUT) bool) bool {
-	ms := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: false}
-	var s sink[OUT] = ms
+	s := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: false}
 
-	evaluate(p, s)
+	p.evaluate(s)
 
-	return ms.value
+	return s.value
 }
 
 type findSink[T any] struct {
@@ -438,12 +433,11 @@ func (fs *findSink[T]) accept(x T) {
 }
 
 func (p *pipeline[S, OUT]) FindFirst() (OUT, bool) {
-	fs := &findSink[OUT]{}
-	var s sink[OUT] = fs
+	s := &findSink[OUT]{}
 
-	evaluate(p, s)
+	p.evaluate(s)
 
-	return fs.value, fs.hasValue
+	return s.value, s.hasValue
 }
 
 func (p *pipeline[S, OUT]) Count() int {
