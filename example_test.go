@@ -20,7 +20,9 @@ func ExampleWordsDict() {
 	scanner := bufio.NewScanner(f)
 
 	lines := stream.While(scanner.Scan, scanner.Text)
-	words := stream.FlatMap(lines, func(line string) stream.Stream[string] { return stream.Slice(strings.Split(line, " ")) })
+	words := stream.FlatMap(lines, func(line string) stream.Stream[string] {
+		return stream.Slice(strings.Split(line, " "))
+	})
 	stream.Map(words, strings.ToLower).
 		Filter(stream.Distinct[string]()).
 		Sorted(stream.NaturalOrder[string]).
@@ -64,11 +66,12 @@ func ExampleIterate() {
 }
 
 func ExampleFib() {
-	p := stream.Iterate([]int{0, 1}, func(x []int) []int {
+	pairs := stream.Iterate([]int{0, 1}, func(x []int) []int {
 		return []int{x[1], x[0] + x[1]}
-	}).Limit(10)
+	})
 
-	stream.Map(p, func(x []int) int { return x[0] }).
+	stream.Map(pairs, func(x []int) int { return x[0] }).
+		Limit(10).
 		ForEach(print[int])
 
 	// Output:
@@ -86,7 +89,9 @@ func ExampleFib() {
 
 func ExampleFilter() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		Filter(func(s string) bool { return len(s) > 2 }).
+		Filter(func(s string) bool {
+			return len(s) > 2
+		}).
 		Peek(print[string]).
 		Count()
 
@@ -145,7 +150,9 @@ func ExampleSorted() {
 
 func ExampleForEach() {
 	stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		Filter(func(s string) bool { return len(s) > 2 }).
+		Filter(func(s string) bool {
+			return len(s) > 2
+		}).
 		ForEach(print[string])
 
 	// Output:
@@ -166,8 +173,12 @@ func ExampleMapReduce() {
 }
 
 func ExampleFlatMap() {
+	split := func(s string) stream.Stream[string] {
+		return stream.Slice(strings.Split(s, ""))
+	}
+
 	s := stream.Of("a", "bb", "ccc", "dddd")
-	stream.FlatMap(s, func(s string) stream.Stream[string] { return stream.Slice(strings.Split(s, "")) }).
+	stream.FlatMap(s, split).
 		Limit(4).
 		ForEach(print[string])
 
@@ -204,7 +215,7 @@ func ExampleDistinctUsing() {
 		[]string{"a"},
 		[]string{"d", "d", "d", "d"}).
 		Filter(stream.DistinctUsing(concat)).
-		ForEach(func(s []string) { fmt.Println(s) })
+		ForEach(print[[]string])
 
 	// Output:
 	// [a]
@@ -216,7 +227,9 @@ func ExampleDistinctUsing() {
 func ExampleAllButLast() {
 	input := []string{"foo", "bar", "baz", "goo", "bar", "gaz"}
 	bars := stream.Slice(input).
-		Filter(func(s string) bool { return s == "bar" }).
+		Filter(func(s string) bool {
+			return s == "bar"
+		}).
 		Count()
 	fmt.Println("bars:", bars)
 
@@ -266,12 +279,16 @@ func ExampleGroupBy() {
 
 func ExampleAllMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		AllMatch(func(s string) bool { return len(s) > 3 })
+		AllMatch(func(s string) bool {
+			return len(s) > 3
+		})
 
 	fmt.Println(m)
 
 	m = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		AllMatch(func(s string) bool { return len(s) > 0 })
+		AllMatch(func(s string) bool {
+			return len(s) > 0
+		})
 
 	fmt.Println(m)
 
@@ -282,12 +299,16 @@ func ExampleAllMatch() {
 
 func ExampleAnyMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		AnyMatch(func(s string) bool { return len(s) > 3 })
+		AnyMatch(func(s string) bool {
+			return len(s) > 3
+		})
 
 	fmt.Println(m)
 
 	m = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		AnyMatch(func(s string) bool { return len(s) > 10 })
+		AnyMatch(func(s string) bool {
+			return len(s) > 10
+		})
 
 	fmt.Println(m)
 
@@ -298,12 +319,16 @@ func ExampleAnyMatch() {
 
 func ExampleNoneMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		NoneMatch(func(s string) bool { return len(s) > 3 })
+		NoneMatch(func(s string) bool {
+			return len(s) > 3
+		})
 
 	fmt.Println(m)
 
 	m = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		NoneMatch(func(s string) bool { return len(s) > 10 })
+		NoneMatch(func(s string) bool {
+			return len(s) > 10
+		})
 
 	fmt.Println(m)
 
@@ -314,13 +339,17 @@ func ExampleNoneMatch() {
 
 func ExampleFindFirst() {
 	x, ok := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		Filter(func(s string) bool { return len(s) > 2 }).
+		Filter(func(s string) bool {
+			return len(s) > 2
+		}).
 		FindFirst()
 
 	fmt.Println(x, ok)
 
 	_, ok = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		Filter(func(s string) bool { return len(s) > 10 }).
+		Filter(func(s string) bool {
+			return len(s) > 10
+		}).
 		FindFirst()
 
 	fmt.Println(ok)
