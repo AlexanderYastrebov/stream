@@ -9,7 +9,7 @@ type Stream[T any] interface {
 	Skip(n int) Stream[T]
 	Sorted(less func(T, T) bool) Stream[T]
 	ForEach(consumer func(element T))
-	Reduce(accumulator func(a, b T) T) (T, bool)
+	Reduce(accumulator func(T, T) T) (T, bool)
 	AllMatch(predicate func(element T) bool) bool
 	AnyMatch(predicate func(element T) bool) bool
 	NoneMatch(predicate func(element T) bool) bool
@@ -235,7 +235,7 @@ func (p *pipeline[T]) ForEach(consumer func(T)) {
 	p.evaluate(consumerSink[T](consumer))
 }
 
-func (p *pipeline[T]) Reduce(accumulator func(a, b T) T) (T, bool) {
+func (p *pipeline[T]) Reduce(accumulator func(T, T) T) (T, bool) {
 	var zero T
 	foundAny := false
 	return Reduce[T, T](p, zero, func(a T, e T) T {
