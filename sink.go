@@ -111,3 +111,41 @@ func (fs *findSink[T]) accept(x T) {
 		fs.hasValue = true
 	}
 }
+
+type minSink[T any] struct {
+	less     func(T, T) bool
+	value    T
+	hasValue bool
+}
+
+func (s *minSink[T]) begin()     {}
+func (s *minSink[T]) end()       {}
+func (s *minSink[T]) done() bool { return false }
+
+func (s *minSink[T]) accept(x T) {
+	if !s.hasValue {
+		s.value = x
+		s.hasValue = true
+	} else if s.less(x, s.value) {
+		s.value = x
+	}
+}
+
+type maxSink[T any] struct {
+	less     func(T, T) bool
+	value    T
+	hasValue bool
+}
+
+func (s *maxSink[T]) begin()     {}
+func (s *maxSink[T]) end()       {}
+func (s *maxSink[T]) done() bool { return false }
+
+func (s *maxSink[T]) accept(x T) {
+	if !s.hasValue {
+		s.value = x
+		s.hasValue = true
+	} else if s.less(s.value, x) {
+		s.value = x
+	}
+}

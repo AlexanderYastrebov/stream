@@ -14,6 +14,8 @@ type Stream[T any] interface {
 	AnyMatch(predicate func(element T) bool) bool
 	NoneMatch(predicate func(element T) bool) bool
 	FindFirst() (T, bool)
+	Min(less func(T, T) bool) (T, bool)
+	Max(less func(T, T) bool) (T, bool)
 	Count() int
 	ToSlice() []T
 }
@@ -268,6 +270,22 @@ func (p *pipeline[T]) NoneMatch(predicate func(element T) bool) bool {
 
 func (p *pipeline[T]) FindFirst() (T, bool) {
 	s := &findSink[T]{}
+
+	p.evaluate(s)
+
+	return s.value, s.hasValue
+}
+
+func (p *pipeline[T]) Min(less func(T, T) bool) (T, bool) {
+	s := &minSink[T]{less: less}
+
+	p.evaluate(s)
+
+	return s.value, s.hasValue
+}
+
+func (p *pipeline[T]) Max(less func(T, T) bool) (T, bool) {
+	s := &maxSink[T]{less: less}
 
 	p.evaluate(s)
 

@@ -358,3 +358,25 @@ func ExampleFindFirst() {
 	// ccc true
 	// false
 }
+
+func ExampleMax() {
+	x, ok := stream.Of(2, 5, 1, 4, 3).
+		Max(stream.NaturalOrder[int])
+
+	fmt.Println(x, ok)
+
+	x, ok = stream.Of(2, 5, 1, 4, 3).
+		Min(stream.NaturalOrder[int])
+
+	fmt.Println(x, ok)
+
+	x, ok = stream.Of[int]().
+		Min(stream.NaturalOrder[int])
+
+	fmt.Println(x, ok)
+
+	// Output:
+	// 5 true
+	// 1 true
+	// 0 false
+}
