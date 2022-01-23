@@ -48,6 +48,18 @@ func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
 	}
 }
 
+func FlatMap[S, T, R any](st Stream[S, T], mapper func(element T) Stream[S, R]) Stream[S, R] {
+	p, ok := st.(*pipeline[S, T])
+	if !ok {
+		panic("unexpected stream type")
+	}
+	return &pipeline[S, R]{
+		wrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
+			p.wrapSink(flatMapWrapSink(s, mapper), done)
+		},
+	}
+}
+
 func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) A {
 	p, ok := st.(*pipeline[S, T])
 	if !ok {
@@ -156,6 +168,15 @@ func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
 		downstream: s,
 		acceptFunc: func(x T) {
 			s.accept(mapper(x))
+		},
+	}
+}
+
+func flatMapWrapSink[S, T, R any](s sink[R], mapper func(element T) Stream[S, R]) sink[T] {
+	return &chainedSink[T, R]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			mapper(x).ForEach(s.accept)
 		},
 	}
 }

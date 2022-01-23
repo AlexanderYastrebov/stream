@@ -116,6 +116,19 @@ func ExampleMapReduce() {
 	// 10 true
 }
 
+func ExampleFlatMap() {
+	s := stream.Of("a", "bb", "ccc", "dddd")
+	stream.FlatMap(s, func(s string) stream.Stream[string, string] { return stream.Slice(strings.Split(s, "")) }).
+		Limit(4).
+		ForEach(print[string])
+
+	// Output:
+	// a
+	// b
+	// b
+	// c
+}
+
 func ExampleDistinct() {
 	stream.Of("a", "bb", "bb", "a", "ccc", "a", "dddd").
 		Filter(stream.Distinct[string]()).
