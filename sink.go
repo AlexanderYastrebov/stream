@@ -15,23 +15,23 @@ type chainedSink[T, OUT any] struct {
 	acceptFunc func(T)
 }
 
-func (cs *chainedSink[T, OUT]) begin() {
-	cs.downstream.begin()
+func (s *chainedSink[T, OUT]) begin() {
+	s.downstream.begin()
 }
 
-func (cs *chainedSink[T, OUT]) end() {
-	cs.downstream.end()
+func (s *chainedSink[T, OUT]) end() {
+	s.downstream.end()
 }
 
-func (cs *chainedSink[T, OUT]) done() bool {
-	if cs.doneFunc != nil {
-		return cs.doneFunc()
+func (s *chainedSink[T, OUT]) done() bool {
+	if s.doneFunc != nil {
+		return s.doneFunc()
 	}
-	return cs.downstream.done()
+	return s.downstream.done()
 }
 
-func (cs *chainedSink[T, OUT]) accept(x T) {
-	cs.acceptFunc(x)
+func (s *chainedSink[T, OUT]) accept(x T) {
+	s.acceptFunc(x)
 }
 
 type accumulatorSink[T, A any] struct {
@@ -39,12 +39,12 @@ type accumulatorSink[T, A any] struct {
 	accumulator func(a A, b T) A
 }
 
-func (as *accumulatorSink[T, A]) begin()     {}
-func (as *accumulatorSink[T, A]) end()       {}
-func (as *accumulatorSink[T, A]) done() bool { return false }
+func (s *accumulatorSink[T, A]) begin()     {}
+func (s *accumulatorSink[T, A]) end()       {}
+func (s *accumulatorSink[T, A]) done() bool { return false }
 
-func (as *accumulatorSink[T, A]) accept(x T) {
-	as.value = as.accumulator(as.value, x)
+func (s *accumulatorSink[T, A]) accept(x T) {
+	s.value = s.accumulator(s.value, x)
 }
 
 type sortedSink[T any] struct {
@@ -71,10 +71,10 @@ func (s *sortedSink[T]) accept(x T) {
 
 type consumerSink[T any] func(T)
 
-func (cs consumerSink[T]) begin()     {}
-func (cs consumerSink[T]) end()       {}
-func (cs consumerSink[T]) done() bool { return false }
-func (cs consumerSink[T]) accept(x T) { cs(x) }
+func (s consumerSink[T]) begin()     {}
+func (s consumerSink[T]) end()       {}
+func (s consumerSink[T]) done() bool { return false }
+func (s consumerSink[T]) accept(x T) { s(x) }
 
 type matchSink[T any] struct {
 	predicate func(element T) bool
@@ -85,14 +85,14 @@ type matchSink[T any] struct {
 	hasValue bool
 }
 
-func (ms *matchSink[T]) begin()     { ms.value = !ms.stopValue }
-func (ms *matchSink[T]) end()       {}
-func (ms *matchSink[T]) done() bool { return ms.hasValue }
+func (s *matchSink[T]) begin()     { s.value = !s.stopValue }
+func (s *matchSink[T]) end()       {}
+func (s *matchSink[T]) done() bool { return s.hasValue }
 
-func (ms *matchSink[T]) accept(x T) {
-	if !ms.hasValue && ms.predicate(x) == ms.stopWhen {
-		ms.value = ms.stopValue
-		ms.hasValue = true
+func (s *matchSink[T]) accept(x T) {
+	if !s.hasValue && s.predicate(x) == s.stopWhen {
+		s.value = s.stopValue
+		s.hasValue = true
 	}
 }
 
@@ -101,14 +101,14 @@ type findSink[T any] struct {
 	hasValue bool
 }
 
-func (fs *findSink[T]) begin()     {}
-func (fs *findSink[T]) end()       {}
-func (fs *findSink[T]) done() bool { return fs.hasValue }
+func (s *findSink[T]) begin()     {}
+func (s *findSink[T]) end()       {}
+func (s *findSink[T]) done() bool { return s.hasValue }
 
-func (fs *findSink[T]) accept(x T) {
-	if !fs.hasValue {
-		fs.value = x
-		fs.hasValue = true
+func (s *findSink[T]) accept(x T) {
+	if !s.hasValue {
+		s.value = x
+		s.hasValue = true
 	}
 }
 
