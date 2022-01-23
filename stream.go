@@ -352,17 +352,15 @@ func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
 	}
 }
 
-type consumerSink[T any] struct {
-	acceptFunc func(element T)
-}
+type consumerSink[T any] func(T)
 
-func (cs *consumerSink[T]) begin()     {}
-func (cs *consumerSink[T]) end()       {}
-func (cs *consumerSink[T]) done() bool { return false }
-func (cs *consumerSink[T]) accept(x T) { cs.acceptFunc(x) }
+func (cs consumerSink[T]) begin()     {}
+func (cs consumerSink[T]) end()       {}
+func (cs consumerSink[T]) done() bool { return false }
+func (cs consumerSink[T]) accept(x T) { cs(x) }
 
 func (p *pipeline[S, OUT]) ForEach(consumer func(OUT)) {
-	var s sink[OUT] = &consumerSink[OUT]{consumer}
+	var s sink[OUT] = consumerSink[OUT](consumer)
 
 	evaluate(p, s)
 }
