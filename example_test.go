@@ -359,7 +359,7 @@ func ExampleFindFirst() {
 	// false
 }
 
-func ExampleMax() {
+func ExampleMinMax() {
 	x, ok := stream.Of(2, 5, 1, 4, 3).
 		Max(stream.NaturalOrder[int])
 
