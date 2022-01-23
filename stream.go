@@ -26,23 +26,19 @@ func Of[T any](x ...T) Stream[T, T] {
 }
 
 func Slice[T any](x []T) Stream[T, T] {
-	it := &sliceIterator[T]{x}
-	return head[T](it)
+	return head[T](&sliceIterator[T]{x})
 }
 
 func Generate[T any](generator func() T) Stream[T, T] {
-	it := generatorIterator[T](generator)
-	return head[T](it)
+	return head[T](generatorIterator[T](generator))
 }
 
 func Iterate[T any](seed T, operator func(T) T) Stream[T, T] {
-	it := &seedIterator[T]{seed, operator}
-	return head[T](it)
+	return head[T](&seedIterator[T]{seed, operator})
 }
 
 func While[T any](hasNext func() bool, supplier func() T) Stream[T, T] {
-	it := &whileIterator[T]{hasNext, supplier, hasNext()}
-	return head[T](it)
+	return head[T](&whileIterator[T]{hasNext, supplier, hasNext()})
 }
 
 func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
@@ -344,12 +340,16 @@ func (o observer[T]) observe(x T) bool {
 
 func Distinct[T comparable]() func(T) bool {
 	o := make(observer[T])
-	return func(x T) bool { return o.observe(x) }
+	return func(x T) bool {
+		return o.observe(x)
+	}
 }
 
 func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
 	o := make(observer[C])
-	return func(x T) bool { return o.observe(mapper(x)) }
+	return func(x T) bool {
+		return o.observe(mapper(x))
+	}
 }
 
 type consumerSink[T any] struct {
@@ -362,8 +362,7 @@ func (cs *consumerSink[T]) done() bool { return false }
 func (cs *consumerSink[T]) accept(x T) { cs.acceptFunc(x) }
 
 func (p *pipeline[S, OUT]) ForEach(consumer func(OUT)) {
-	cs := &consumerSink[OUT]{consumer}
-	var s sink[OUT] = cs
+	var s sink[OUT] = &consumerSink[OUT]{consumer}
 
 	evaluate(p, s)
 }
