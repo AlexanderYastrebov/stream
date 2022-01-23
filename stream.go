@@ -1,12 +1,16 @@
 package stream
 
+import (
+	"constraints"
+	"sort"
+)
+
 type Stream[S, T any] interface {
 	Filter(predicate func(element T) bool) Stream[S, T]
 	Peek(consumer func(element T)) Stream[S, T]
-
 	Limit(n int) Stream[S, T]
 	Skip(n int) Stream[S, T]
-
+	Sorted(less func(T, T) bool) Stream[S, T]
 	ForEach(consumer func(element T))
 	Reduce(accumulator func(a, b T) T) (T, bool)
 	AllMatch(predicate func(element T) bool) bool
@@ -75,9 +79,10 @@ func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) 
 }
 
 func evaluate[S, T any](p *pipeline[S, T], out sink[T]) {
-	var it iterator[S]
-	var s sink[S]
-	p.wrapSink(out, func(ii iterator[S], ss sink[S]) { it, s = ii, ss })
+	p.wrapSink(out, copyInto[S])
+}
+
+func copyInto[T any](it iterator[T], s sink[T]) {
 	s.begin()
 	for !s.done() && it.advance(s.accept) {
 	}
@@ -231,7 +236,7 @@ func skipWrapSink[T any](s sink[T], n int) sink[T] {
 }
 
 type pipeline[S, OUT any] struct {
-	wrapSink func(sink[OUT], func(iterator[S], sink[S]))
+	wrapSink func(s sink[OUT], done func(iterator[S], sink[S]))
 }
 
 func head[S any](it iterator[S]) *pipeline[S, S] {
@@ -273,6 +278,40 @@ func (p *pipeline[S, OUT]) Skip(n int) Stream[S, OUT] {
 		},
 	}
 }
+
+type sortedSink[T any] struct {
+	downstream sink[T]
+	less       func(T, T) bool
+	slice      []T
+}
+
+func (s *sortedSink[T]) begin()     {}
+func (s *sortedSink[T]) done() bool { return false }
+
+func (s *sortedSink[T]) end() {
+	sort.SliceStable(s.slice, func(i, j int) bool {
+		return s.less(s.slice[i], s.slice[j])
+	})
+	var it iterator[T] = &sliceIterator[T]{s.slice}
+	copyInto(it, s.downstream)
+	s.slice = nil
+}
+
+func (s *sortedSink[T]) accept(x T) {
+	s.slice = append(s.slice, x)
+}
+
+func (p *pipeline[S, OUT]) Sorted(less func(OUT, OUT) bool) Stream[S, OUT] {
+	return &pipeline[S, OUT]{
+		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
+			p.wrapSink(&sortedSink[OUT]{downstream: s, less: less}, done)
+		},
+	}
+}
+
+func NaturalOrder[T constraints.Ordered](a, b T) bool { return a < b }
+
+func ReverseOrder[T constraints.Ordered](a, b T) bool { return a > b }
 
 type observer[T comparable] map[T]struct{}
 

@@ -94,6 +94,26 @@ func ExampleSkipLimit() {
 	// 0
 }
 
+func ExampleSorted() {
+	stream.Of("bb", "a", "dddd", "ccc").
+		Sorted(stream.NaturalOrder[string]).
+		ForEach(print[string])
+
+	stream.Of("bb", "a", "dddd", "ccc").
+		Sorted(stream.ReverseOrder[string]).
+		ForEach(print[string])
+
+	// Output:
+	// a
+	// bb
+	// ccc
+	// dddd
+	// dddd
+	// ccc
+	// bb
+	// a
+}
+
 func ExampleForEach() {
 	stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool { return len(s) > 2 }).
