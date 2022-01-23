@@ -1,7 +1,9 @@
 package stream_test
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/AlexanderYastrebov/stream"
@@ -9,6 +11,33 @@ import (
 
 func print[T any](x T) {
 	fmt.Println(x)
+}
+
+func ExampleWordsDict() {
+	f, _ := os.Open("testdata/lorem.txt")
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+
+	lines := stream.While(scanner.Scan, scanner.Text)
+	words := stream.FlatMap(lines, func(line string) stream.Stream[string, string] { return stream.Slice(strings.Split(line, " ")) })
+	stream.Map(words, strings.ToLower).
+		Filter(stream.Distinct[string]()).
+		Sorted(stream.NaturalOrder[string]).
+		Limit(10).
+		ForEach(print[string])
+
+	// Output:
+	// ad
+	// adipiscing
+	// aliqua.
+	// aliquip
+	// amet,
+	// anim
+	// aute
+	// cillum
+	// commodo
+	// consectetur
 }
 
 func ExampleGenerate() {

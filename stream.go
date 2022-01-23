@@ -40,6 +40,11 @@ func Iterate[T any](seed T, operator func(T) T) Stream[T, T] {
 	return head[T](it)
 }
 
+func While[T any](hasNext func() bool, supplier func() T) Stream[T, T] {
+	it := &whileIterator[T]{hasNext, supplier, hasNext()}
+	return head[T](it)
+}
+
 func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
 	p, ok := st.(*pipeline[S, T])
 	if !ok {
@@ -121,6 +126,20 @@ func (it *seedIterator[T]) advance(action func(T)) bool {
 	action(it.x)
 	it.x = it.operator(it.x)
 	return true
+}
+
+type whileIterator[T any] struct {
+	check   func() bool
+	next    func() T
+	hasNext bool
+}
+
+func (it *whileIterator[T]) advance(action func(T)) bool {
+	if it.hasNext {
+		action(it.next())
+		it.hasNext = it.check()
+	}
+	return it.hasNext
 }
 
 type sink[T any] interface {
