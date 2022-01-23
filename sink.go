@@ -4,9 +4,9 @@ import "sort"
 
 type sink[T any] interface {
 	begin()
-	end()
 	done() bool
 	accept(T)
+	end()
 }
 
 type chainedSink[T, OUT any] struct {
@@ -17,10 +17,6 @@ type chainedSink[T, OUT any] struct {
 
 func (s *chainedSink[T, OUT]) begin() {
 	s.downstream.begin()
-}
-
-func (s *chainedSink[T, OUT]) end() {
-	s.downstream.end()
 }
 
 func (s *chainedSink[T, OUT]) done() bool {
@@ -34,27 +30,36 @@ func (s *chainedSink[T, OUT]) accept(x T) {
 	s.acceptFunc(x)
 }
 
+func (s *chainedSink[T, OUT]) end() {
+	s.downstream.end()
+}
+
+type base struct{}
+
+func (base) begin()     {}
+func (base) done() bool { return false }
+func (base) end()       {}
+
 type accumulatorSink[T, A any] struct {
+	base
 	value       A
 	accumulator func(a A, b T) A
 }
-
-func (s *accumulatorSink[T, A]) begin()     {}
-func (s *accumulatorSink[T, A]) end()       {}
-func (s *accumulatorSink[T, A]) done() bool { return false }
 
 func (s *accumulatorSink[T, A]) accept(x T) {
 	s.value = s.accumulator(s.value, x)
 }
 
 type sortedSink[T any] struct {
+	base
 	downstream sink[T]
 	less       func(T, T) bool
 	slice      []T
 }
 
-func (s *sortedSink[T]) begin()     {}
-func (s *sortedSink[T]) done() bool { return false }
+func (s *sortedSink[T]) accept(x T) {
+	s.slice = append(s.slice, x)
+}
 
 func (s *sortedSink[T]) end() {
 	sort.SliceStable(s.slice, func(i, j int) bool {
@@ -65,18 +70,15 @@ func (s *sortedSink[T]) end() {
 	s.slice = nil
 }
 
-func (s *sortedSink[T]) accept(x T) {
-	s.slice = append(s.slice, x)
-}
-
 type consumerSink[T any] func(T)
 
 func (s consumerSink[T]) begin()     {}
-func (s consumerSink[T]) end()       {}
 func (s consumerSink[T]) done() bool { return false }
 func (s consumerSink[T]) accept(x T) { s(x) }
+func (s consumerSink[T]) end()       {}
 
 type matchSink[T any] struct {
+	base
 	predicate func(element T) bool
 	stopWhen  bool
 	stopValue bool
@@ -85,9 +87,13 @@ type matchSink[T any] struct {
 	hasValue bool
 }
 
-func (s *matchSink[T]) begin()     { s.value = !s.stopValue }
-func (s *matchSink[T]) end()       {}
-func (s *matchSink[T]) done() bool { return s.hasValue }
+func (s *matchSink[T]) begin() {
+	s.value = !s.stopValue
+}
+
+func (s *matchSink[T]) done() bool {
+	return s.hasValue
+}
 
 func (s *matchSink[T]) accept(x T) {
 	if !s.hasValue && s.predicate(x) == s.stopWhen {
@@ -97,13 +103,14 @@ func (s *matchSink[T]) accept(x T) {
 }
 
 type findSink[T any] struct {
+	base
 	value    T
 	hasValue bool
 }
 
-func (s *findSink[T]) begin()     {}
-func (s *findSink[T]) end()       {}
-func (s *findSink[T]) done() bool { return s.hasValue }
+func (s *findSink[T]) done() bool {
+	return s.hasValue
+}
 
 func (s *findSink[T]) accept(x T) {
 	if !s.hasValue {
@@ -113,14 +120,11 @@ func (s *findSink[T]) accept(x T) {
 }
 
 type minSink[T any] struct {
+	base
 	less     func(T, T) bool
 	value    T
 	hasValue bool
 }
-
-func (s *minSink[T]) begin()     {}
-func (s *minSink[T]) end()       {}
-func (s *minSink[T]) done() bool { return false }
 
 func (s *minSink[T]) accept(x T) {
 	if !s.hasValue {
@@ -132,14 +136,11 @@ func (s *minSink[T]) accept(x T) {
 }
 
 type maxSink[T any] struct {
+	base
 	less     func(T, T) bool
 	value    T
 	hasValue bool
 }
-
-func (s *maxSink[T]) begin()     {}
-func (s *maxSink[T]) end()       {}
-func (s *maxSink[T]) done() bool { return false }
 
 func (s *maxSink[T]) accept(x T) {
 	if !s.hasValue {
