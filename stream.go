@@ -44,8 +44,8 @@ func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
 		panic("unexpected stream type")
 	}
 	return &pipeline[S, R]{
-		wrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
-			p.wrapSink(mapWrapSink(s, mapper), done)
+		evaluate: func(s sink[R]) {
+			p.evaluate(mapWrapSink(s, mapper))
 		},
 	}
 }
@@ -65,8 +65,8 @@ func FlatMap[S, T, R any](st Stream[S, T], mapper func(element T) Stream[S, R]) 
 		panic("unexpected stream type")
 	}
 	return &pipeline[S, R]{
-		wrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
-			p.wrapSink(flatMapWrapSink(s, mapper), done)
+		evaluate: func(s sink[R]) {
+			p.evaluate(flatMapWrapSink(s, mapper))
 		},
 	}
 }
@@ -122,19 +122,15 @@ func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
 }
 
 type pipeline[S, OUT any] struct {
-	wrapSink func(s sink[OUT], done func(iterator[S], sink[S]))
+	evaluate func(sink[OUT])
 }
 
 func head[S any](it iterator[S]) *pipeline[S, S] {
 	return &pipeline[S, S]{
-		wrapSink: func(s sink[S], done func(iterator[S], sink[S])) {
-			done(it, s)
+		evaluate: func(s sink[S]) {
+			copyInto(it, s)
 		},
 	}
-}
-
-func (p *pipeline[S, T]) evaluate(out sink[T]) {
-	p.wrapSink(out, copyInto[S])
 }
 
 func copyInto[T any](it iterator[T], s sink[T]) {
@@ -146,8 +142,8 @@ func copyInto[T any](it iterator[T], s sink[T]) {
 
 func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
-		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(filterWrapSink(s, predicate), done)
+		evaluate: func(s sink[OUT]) {
+			p.evaluate(filterWrapSink(s, predicate))
 		},
 	}
 }
@@ -165,8 +161,8 @@ func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 
 func (p *pipeline[S, OUT]) Peek(consumer func(OUT)) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
-		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(peekWrapSink(s, consumer), done)
+		evaluate: func(s sink[OUT]) {
+			p.evaluate(peekWrapSink(s, consumer))
 		},
 	}
 }
@@ -183,8 +179,8 @@ func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
 
 func (p *pipeline[S, OUT]) Limit(n int) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
-		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(limitWrapSink(s, n), done)
+		evaluate: func(s sink[OUT]) {
+			p.evaluate(limitWrapSink(s, n))
 		},
 	}
 }
@@ -206,8 +202,8 @@ func limitWrapSink[T any](s sink[T], n int) sink[T] {
 
 func (p *pipeline[S, OUT]) Skip(n int) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
-		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(skipWrapSink(s, n), done)
+		evaluate: func(s sink[OUT]) {
+			p.evaluate(skipWrapSink(s, n))
 		},
 	}
 }
@@ -227,8 +223,8 @@ func skipWrapSink[T any](s sink[T], n int) sink[T] {
 
 func (p *pipeline[S, OUT]) Sorted(less func(OUT, OUT) bool) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
-		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
-			p.wrapSink(&sortedSink[OUT]{downstream: s, less: less}, done)
+		evaluate: func(s sink[OUT]) {
+			p.evaluate(&sortedSink[OUT]{downstream: s, less: less})
 		},
 	}
 }
