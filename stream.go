@@ -2,12 +2,12 @@ package stream
 
 import "constraints"
 
-type Stream[S, T any] interface {
-	Filter(predicate func(element T) bool) Stream[S, T]
-	Peek(consumer func(element T)) Stream[S, T]
-	Limit(n int) Stream[S, T]
-	Skip(n int) Stream[S, T]
-	Sorted(less func(T, T) bool) Stream[S, T]
+type Stream[T any] interface {
+	Filter(predicate func(element T) bool) Stream[T]
+	Peek(consumer func(element T)) Stream[T]
+	Limit(n int) Stream[T]
+	Skip(n int) Stream[T]
+	Sorted(less func(T, T) bool) Stream[T]
 	ForEach(consumer func(element T))
 	Reduce(accumulator func(a, b T) T) (T, bool)
 	AllMatch(predicate func(element T) bool) bool
@@ -18,32 +18,32 @@ type Stream[S, T any] interface {
 	ToSlice() []T
 }
 
-func Of[T any](x ...T) Stream[T, T] {
+func Of[T any](x ...T) Stream[T] {
 	return Slice(x)
 }
 
-func Slice[T any](x []T) Stream[T, T] {
+func Slice[T any](x []T) Stream[T] {
 	return head[T](&sliceIterator[T]{x})
 }
 
-func Generate[T any](generator func() T) Stream[T, T] {
+func Generate[T any](generator func() T) Stream[T] {
 	return head[T](generatorIterator[T](generator))
 }
 
-func Iterate[T any](seed T, operator func(T) T) Stream[T, T] {
+func Iterate[T any](seed T, operator func(T) T) Stream[T] {
 	return head[T](&seedIterator[T]{seed, operator})
 }
 
-func While[T any](hasNext func() bool, supplier func() T) Stream[T, T] {
+func While[T any](hasNext func() bool, supplier func() T) Stream[T] {
 	return head[T](&whileIterator[T]{hasNext, supplier, hasNext()})
 }
 
-func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
-	p, ok := st.(*pipeline[S, T])
+func Map[T, R any](st Stream[T], mapper func(element T) R) Stream[R] {
+	p, ok := st.(*pipeline[T])
 	if !ok {
 		panic("unexpected stream type")
 	}
-	return &pipeline[S, R]{
+	return &pipeline[R]{
 		evaluate: func(s sink[R]) {
 			p.evaluate(mapWrapSink(s, mapper))
 		},
@@ -59,19 +59,19 @@ func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
 	}
 }
 
-func FlatMap[S, T, R any](st Stream[S, T], mapper func(element T) Stream[S, R]) Stream[S, R] {
-	p, ok := st.(*pipeline[S, T])
+func FlatMap[T, R any](st Stream[T], mapper func(element T) Stream[R]) Stream[R] {
+	p, ok := st.(*pipeline[T])
 	if !ok {
 		panic("unexpected stream type")
 	}
-	return &pipeline[S, R]{
+	return &pipeline[R]{
 		evaluate: func(s sink[R]) {
 			p.evaluate(flatMapWrapSink(s, mapper))
 		},
 	}
 }
 
-func flatMapWrapSink[S, T, R any](s sink[R], mapper func(element T) Stream[S, R]) sink[T] {
+func flatMapWrapSink[T, R any](s sink[R], mapper func(element T) Stream[R]) sink[T] {
 	return &chainedSink[T, R]{
 		downstream: s,
 		acceptFunc: func(x T) {
@@ -80,8 +80,8 @@ func flatMapWrapSink[S, T, R any](s sink[R], mapper func(element T) Stream[S, R]
 	}
 }
 
-func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) A {
-	p, ok := st.(*pipeline[S, T])
+func Reduce[T, A any](st Stream[T], identity A, accumulator func(A, T) A) A {
+	p, ok := st.(*pipeline[T])
 	if !ok {
 		panic("unexpected stream type")
 	}
@@ -121,13 +121,13 @@ func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
 	}
 }
 
-type pipeline[S, OUT any] struct {
-	evaluate func(sink[OUT])
+type pipeline[T any] struct {
+	evaluate func(sink[T])
 }
 
-func head[S any](it iterator[S]) *pipeline[S, S] {
-	return &pipeline[S, S]{
-		evaluate: func(s sink[S]) {
+func head[T any](it iterator[T]) *pipeline[T] {
+	return &pipeline[T]{
+		evaluate: func(s sink[T]) {
 			copyInto(it, s)
 		},
 	}
@@ -140,9 +140,9 @@ func copyInto[T any](it iterator[T], s sink[T]) {
 	s.end()
 }
 
-func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
-	return &pipeline[S, OUT]{
-		evaluate: func(s sink[OUT]) {
+func (p *pipeline[T]) Filter(predicate func(T) bool) Stream[T] {
+	return &pipeline[T]{
+		evaluate: func(s sink[T]) {
 			p.evaluate(filterWrapSink(s, predicate))
 		},
 	}
@@ -159,9 +159,9 @@ func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 	}
 }
 
-func (p *pipeline[S, OUT]) Peek(consumer func(OUT)) Stream[S, OUT] {
-	return &pipeline[S, OUT]{
-		evaluate: func(s sink[OUT]) {
+func (p *pipeline[T]) Peek(consumer func(T)) Stream[T] {
+	return &pipeline[T]{
+		evaluate: func(s sink[T]) {
 			p.evaluate(peekWrapSink(s, consumer))
 		},
 	}
@@ -177,9 +177,9 @@ func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
 	}
 }
 
-func (p *pipeline[S, OUT]) Limit(n int) Stream[S, OUT] {
-	return &pipeline[S, OUT]{
-		evaluate: func(s sink[OUT]) {
+func (p *pipeline[T]) Limit(n int) Stream[T] {
+	return &pipeline[T]{
+		evaluate: func(s sink[T]) {
 			p.evaluate(limitWrapSink(s, n))
 		},
 	}
@@ -200,9 +200,9 @@ func limitWrapSink[T any](s sink[T], n int) sink[T] {
 	}
 }
 
-func (p *pipeline[S, OUT]) Skip(n int) Stream[S, OUT] {
-	return &pipeline[S, OUT]{
-		evaluate: func(s sink[OUT]) {
+func (p *pipeline[T]) Skip(n int) Stream[T] {
+	return &pipeline[T]{
+		evaluate: func(s sink[T]) {
 			p.evaluate(skipWrapSink(s, n))
 		},
 	}
@@ -221,63 +221,63 @@ func skipWrapSink[T any](s sink[T], n int) sink[T] {
 	}
 }
 
-func (p *pipeline[S, OUT]) Sorted(less func(OUT, OUT) bool) Stream[S, OUT] {
-	return &pipeline[S, OUT]{
-		evaluate: func(s sink[OUT]) {
-			p.evaluate(&sortedSink[OUT]{downstream: s, less: less})
+func (p *pipeline[T]) Sorted(less func(T, T) bool) Stream[T] {
+	return &pipeline[T]{
+		evaluate: func(s sink[T]) {
+			p.evaluate(&sortedSink[T]{downstream: s, less: less})
 		},
 	}
 }
 
-func (p *pipeline[S, OUT]) ForEach(consumer func(OUT)) {
-	p.evaluate(consumerSink[OUT](consumer))
+func (p *pipeline[T]) ForEach(consumer func(T)) {
+	p.evaluate(consumerSink[T](consumer))
 }
 
-func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
-	var zero OUT
+func (p *pipeline[T]) Reduce(accumulator func(a, b T) T) (T, bool) {
+	var zero T
 	foundAny := false
-	return Reduce[S, OUT, OUT](p, zero, func(a OUT, e OUT) OUT {
+	return Reduce[T, T](p, zero, func(a T, e T) T {
 		foundAny = true
 		return accumulator(a, e)
 	}), foundAny
 }
 
-func (p *pipeline[S, OUT]) AllMatch(predicate func(element OUT) bool) bool {
-	s := &matchSink[OUT]{predicate: predicate, stopWhen: false, stopValue: false}
+func (p *pipeline[T]) AllMatch(predicate func(element T) bool) bool {
+	s := &matchSink[T]{predicate: predicate, stopWhen: false, stopValue: false}
 
 	p.evaluate(s)
 
 	return s.value
 }
 
-func (p *pipeline[S, OUT]) AnyMatch(predicate func(element OUT) bool) bool {
-	s := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: true}
+func (p *pipeline[T]) AnyMatch(predicate func(element T) bool) bool {
+	s := &matchSink[T]{predicate: predicate, stopWhen: true, stopValue: true}
 
 	p.evaluate(s)
 
 	return s.value
 }
 
-func (p *pipeline[S, OUT]) NoneMatch(predicate func(element OUT) bool) bool {
-	s := &matchSink[OUT]{predicate: predicate, stopWhen: true, stopValue: false}
+func (p *pipeline[T]) NoneMatch(predicate func(element T) bool) bool {
+	s := &matchSink[T]{predicate: predicate, stopWhen: true, stopValue: false}
 
 	p.evaluate(s)
 
 	return s.value
 }
 
-func (p *pipeline[S, OUT]) FindFirst() (OUT, bool) {
-	s := &findSink[OUT]{}
+func (p *pipeline[T]) FindFirst() (T, bool) {
+	s := &findSink[T]{}
 
 	p.evaluate(s)
 
 	return s.value, s.hasValue
 }
 
-func (p *pipeline[S, OUT]) Count() int {
-	return Reduce[S, OUT, int](p, 0, func(a int, _ OUT) int { return a + 1 })
+func (p *pipeline[T]) Count() int {
+	return Reduce[T, int](p, 0, func(a int, _ T) int { return a + 1 })
 }
 
-func (p *pipeline[S, OUT]) ToSlice() []OUT {
-	return Reduce[S, OUT, []OUT](p, nil, func(a []OUT, e OUT) []OUT { return append(a, e) })
+func (p *pipeline[T]) ToSlice() []T {
+	return Reduce[T, []T](p, nil, func(a []T, e T) []T { return append(a, e) })
 }

@@ -20,7 +20,7 @@ func ExampleWordsDict() {
 	scanner := bufio.NewScanner(f)
 
 	lines := stream.While(scanner.Scan, scanner.Text)
-	words := stream.FlatMap(lines, func(line string) stream.Stream[string, string] { return stream.Slice(strings.Split(line, " ")) })
+	words := stream.FlatMap(lines, func(line string) stream.Stream[string] { return stream.Slice(strings.Split(line, " ")) })
 	stream.Map(words, strings.ToLower).
 		Filter(stream.Distinct[string]()).
 		Sorted(stream.NaturalOrder[string]).
@@ -167,7 +167,7 @@ func ExampleMapReduce() {
 
 func ExampleFlatMap() {
 	s := stream.Of("a", "bb", "ccc", "dddd")
-	stream.FlatMap(s, func(s string) stream.Stream[string, string] { return stream.Slice(strings.Split(s, "")) }).
+	stream.FlatMap(s, func(s string) stream.Stream[string] { return stream.Slice(strings.Split(s, "")) }).
 		Limit(4).
 		ForEach(print[string])
 
