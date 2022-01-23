@@ -87,9 +87,8 @@ func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) 
 	}
 
 	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
-	var aa sink[T] = a
 
-	p.evaluate(aa)
+	p.evaluate(a)
 
 	return a.value
 }
