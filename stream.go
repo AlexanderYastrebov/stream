@@ -50,6 +50,15 @@ func Map[S, T, R any](st Stream[S, T], mapper func(element T) R) Stream[S, R] {
 	}
 }
 
+func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
+	return &chainedSink[T, R]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			s.accept(mapper(x))
+		},
+	}
+}
+
 func FlatMap[S, T, R any](st Stream[S, T], mapper func(element T) Stream[S, R]) Stream[S, R] {
 	p, ok := st.(*pipeline[S, T])
 	if !ok {
@@ -58,6 +67,15 @@ func FlatMap[S, T, R any](st Stream[S, T], mapper func(element T) Stream[S, R]) 
 	return &pipeline[S, R]{
 		wrapSink: func(s sink[R], done func(iterator[S], sink[S])) {
 			p.wrapSink(flatMapWrapSink(s, mapper), done)
+		},
+	}
+}
+
+func flatMapWrapSink[S, T, R any](s sink[R], mapper func(element T) Stream[S, R]) sink[T] {
+	return &chainedSink[T, R]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			mapper(x).ForEach(s.accept)
 		},
 	}
 }
@@ -76,70 +94,31 @@ func Reduce[S, T, A any](st Stream[S, T], identity A, accumulator func(A, T) A) 
 	return a.value
 }
 
-func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
-	return &chainedSink[T, R]{
-		downstream: s,
-		acceptFunc: func(x T) {
-			s.accept(mapper(x))
-		},
+func NaturalOrder[T constraints.Ordered](a, b T) bool { return a < b }
+
+func ReverseOrder[T constraints.Ordered](a, b T) bool { return a > b }
+
+type observer[T comparable] map[T]struct{}
+
+func (o observer[T]) observe(x T) bool {
+	_, ok := o[x]
+	if !ok {
+		o[x] = struct{}{}
+	}
+	return !ok
+}
+
+func Distinct[T comparable]() func(T) bool {
+	o := make(observer[T])
+	return func(x T) bool {
+		return o.observe(x)
 	}
 }
 
-func flatMapWrapSink[S, T, R any](s sink[R], mapper func(element T) Stream[S, R]) sink[T] {
-	return &chainedSink[T, R]{
-		downstream: s,
-		acceptFunc: func(x T) {
-			mapper(x).ForEach(s.accept)
-		},
-	}
-}
-
-func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
-	return &chainedSink[T, T]{
-		downstream: s,
-		acceptFunc: func(x T) {
-			if predicate(x) {
-				s.accept(x)
-			}
-		},
-	}
-}
-
-func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
-	return &chainedSink[T, T]{
-		downstream: s,
-		acceptFunc: func(x T) {
-			consumer(x)
-			s.accept(x)
-		},
-	}
-}
-
-func limitWrapSink[T any](s sink[T], n int) sink[T] {
-	return &chainedSink[T, T]{
-		downstream: s,
-		doneFunc: func() bool {
-			return n <= 0 || s.done()
-		},
-		acceptFunc: func(x T) {
-			if n > 0 {
-				s.accept(x)
-				n--
-			}
-		},
-	}
-}
-
-func skipWrapSink[T any](s sink[T], n int) sink[T] {
-	return &chainedSink[T, T]{
-		downstream: s,
-		acceptFunc: func(x T) {
-			if n > 0 {
-				n--
-				return
-			}
-			s.accept(x)
-		},
+func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
+	o := make(observer[C])
+	return func(x T) bool {
+		return o.observe(mapper(x))
 	}
 }
 
@@ -174,10 +153,31 @@ func (p *pipeline[S, OUT]) Filter(predicate func(OUT) bool) Stream[S, OUT] {
 	}
 }
 
+func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			if predicate(x) {
+				s.accept(x)
+			}
+		},
+	}
+}
+
 func (p *pipeline[S, OUT]) Peek(consumer func(OUT)) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
 			p.wrapSink(peekWrapSink(s, consumer), done)
+		},
+	}
+}
+
+func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			consumer(x)
+			s.accept(x)
 		},
 	}
 }
@@ -190,10 +190,38 @@ func (p *pipeline[S, OUT]) Limit(n int) Stream[S, OUT] {
 	}
 }
 
+func limitWrapSink[T any](s sink[T], n int) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		doneFunc: func() bool {
+			return n <= 0 || s.done()
+		},
+		acceptFunc: func(x T) {
+			if n > 0 {
+				s.accept(x)
+				n--
+			}
+		},
+	}
+}
+
 func (p *pipeline[S, OUT]) Skip(n int) Stream[S, OUT] {
 	return &pipeline[S, OUT]{
 		wrapSink: func(s sink[OUT], done func(iterator[S], sink[S])) {
 			p.wrapSink(skipWrapSink(s, n), done)
+		},
+	}
+}
+
+func skipWrapSink[T any](s sink[T], n int) sink[T] {
+	return &chainedSink[T, T]{
+		downstream: s,
+		acceptFunc: func(x T) {
+			if n > 0 {
+				n--
+				return
+			}
+			s.accept(x)
 		},
 	}
 }
@@ -208,34 +236,6 @@ func (p *pipeline[S, OUT]) Sorted(less func(OUT, OUT) bool) Stream[S, OUT] {
 
 func (p *pipeline[S, OUT]) ForEach(consumer func(OUT)) {
 	p.evaluate(consumerSink[OUT](consumer))
-}
-
-func NaturalOrder[T constraints.Ordered](a, b T) bool { return a < b }
-
-func ReverseOrder[T constraints.Ordered](a, b T) bool { return a > b }
-
-type observer[T comparable] map[T]struct{}
-
-func (o observer[T]) observe(x T) bool {
-	_, ok := o[x]
-	if !ok {
-		o[x] = struct{}{}
-	}
-	return !ok
-}
-
-func Distinct[T comparable]() func(T) bool {
-	o := make(observer[T])
-	return func(x T) bool {
-		return o.observe(x)
-	}
-}
-
-func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
-	o := make(observer[C])
-	return func(x T) bool {
-		return o.observe(mapper(x))
-	}
 }
 
 func (p *pipeline[S, OUT]) Reduce(accumulator func(a, b OUT) OUT) (OUT, bool) {
