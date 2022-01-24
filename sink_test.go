@@ -9,7 +9,6 @@ func TestChainedSink(t *testing.T) {
 	var s sink[string]
 
 	s = &chainedSink[string, string]{
-		downstream: nil,
 		acceptFunc: func(x string) {
 			t.Logf("sink: %s", x)
 		},

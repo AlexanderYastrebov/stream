@@ -55,7 +55,7 @@ func Map[T, R any](st Stream[T], mapper func(element T) R) Stream[R] {
 
 func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
 	return &chainedSink[T, R]{
-		downstream: s,
+		sink: s,
 		acceptFunc: func(x T) {
 			s.accept(mapper(x))
 		},
@@ -76,7 +76,7 @@ func FlatMap[T, R any](st Stream[T], mapper func(element T) Stream[R]) Stream[R]
 
 func flatMapWrapSink[T, R any](s sink[R], mapper func(element T) Stream[R]) sink[T] {
 	return &chainedSink[T, R]{
-		downstream: s,
+		sink: s,
 		acceptFunc: func(x T) {
 			mapper(x).ForEach(s.accept)
 		},
@@ -153,7 +153,7 @@ func (p *pipeline[T]) Filter(predicate func(T) bool) Stream[T] {
 
 func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 	return &chainedSink[T, T]{
-		downstream: s,
+		sink: s,
 		acceptFunc: func(x T) {
 			if predicate(x) {
 				s.accept(x)
@@ -172,7 +172,7 @@ func (p *pipeline[T]) Peek(consumer func(T)) Stream[T] {
 
 func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
 	return &chainedSink[T, T]{
-		downstream: s,
+		sink: s,
 		acceptFunc: func(x T) {
 			consumer(x)
 			s.accept(x)
@@ -190,7 +190,7 @@ func (p *pipeline[T]) Limit(n int) Stream[T] {
 
 func limitWrapSink[T any](s sink[T], n int) sink[T] {
 	return &chainedSink[T, T]{
-		downstream: s,
+		sink: s,
 		doneFunc: func() bool {
 			return n <= 0 || s.done()
 		},
@@ -213,7 +213,7 @@ func (p *pipeline[T]) Skip(n int) Stream[T] {
 
 func skipWrapSink[T any](s sink[T], n int) sink[T] {
 	return &chainedSink[T, T]{
-		downstream: s,
+		sink: s,
 		acceptFunc: func(x T) {
 			if n > 0 {
 				n--

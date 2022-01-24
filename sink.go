@@ -10,28 +10,20 @@ type sink[T any] interface {
 }
 
 type chainedSink[IN, OUT any] struct {
-	downstream sink[OUT]
+	sink[OUT]
 	doneFunc   func() bool
 	acceptFunc func(IN)
-}
-
-func (s *chainedSink[IN, OUT]) begin() {
-	s.downstream.begin()
 }
 
 func (s *chainedSink[IN, OUT]) done() bool {
 	if s.doneFunc != nil {
 		return s.doneFunc()
 	}
-	return s.downstream.done()
+	return s.sink.done()
 }
 
 func (s *chainedSink[IN, OUT]) accept(x IN) {
 	s.acceptFunc(x)
-}
-
-func (s *chainedSink[IN, OUT]) end() {
-	s.downstream.end()
 }
 
 type base struct{}
