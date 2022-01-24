@@ -45,11 +45,11 @@ func While[T any](hasNext func() bool, supplier func() T) Stream[T] {
 
 func Map[T, R any](st Stream[T], mapper func(element T) R) Stream[R] {
 	return pipeline[R](func(s sink[R]) {
-		st.copyInto(mapWrapSink(s, mapper))
+		st.copyInto(mapSink(s, mapper))
 	})
 }
 
-func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
+func mapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
 	return &chainedSink[T, R]{
 		sink: s,
 		acceptFunc: func(x T) {
@@ -60,11 +60,11 @@ func mapWrapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
 
 func FlatMap[T, R any](st Stream[T], mapper func(element T) Stream[R]) Stream[R] {
 	return pipeline[R](func(s sink[R]) {
-		st.copyInto(flatMapWrapSink(s, mapper))
+		st.copyInto(flatMapSink(s, mapper))
 	})
 }
 
-func flatMapWrapSink[T, R any](s sink[R], mapper func(element T) Stream[R]) sink[T] {
+func flatMapSink[T, R any](s sink[R], mapper func(element T) Stream[R]) sink[T] {
 	return &chainedSink[T, R]{
 		sink: s,
 		acceptFunc: func(x T) {
@@ -130,11 +130,11 @@ func (p pipeline[T]) copyInto(s sink[T]) {
 
 func (p pipeline[T]) Filter(predicate func(T) bool) Stream[T] {
 	return pipeline[T](func(s sink[T]) {
-		p.copyInto(filterWrapSink(s, predicate))
+		p.copyInto(filterSink(s, predicate))
 	})
 }
 
-func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
+func filterSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 	return &chainedSink[T, T]{
 		sink: s,
 		acceptFunc: func(x T) {
@@ -147,11 +147,11 @@ func filterWrapSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
 
 func (p pipeline[T]) Peek(consumer func(T)) Stream[T] {
 	return pipeline[T](func(s sink[T]) {
-		p.copyInto(peekWrapSink(s, consumer))
+		p.copyInto(peekSink(s, consumer))
 	})
 }
 
-func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
+func peekSink[T any](s sink[T], consumer func(element T)) sink[T] {
 	return &chainedSink[T, T]{
 		sink: s,
 		acceptFunc: func(x T) {
@@ -163,11 +163,11 @@ func peekWrapSink[T any](s sink[T], consumer func(element T)) sink[T] {
 
 func (p pipeline[T]) Limit(n int) Stream[T] {
 	return pipeline[T](func(s sink[T]) {
-		p.copyInto(limitWrapSink(s, n))
+		p.copyInto(limitSink(s, n))
 	})
 }
 
-func limitWrapSink[T any](s sink[T], n int) sink[T] {
+func limitSink[T any](s sink[T], n int) sink[T] {
 	return &chainedSink[T, T]{
 		sink: s,
 		doneFunc: func() bool {
@@ -184,11 +184,11 @@ func limitWrapSink[T any](s sink[T], n int) sink[T] {
 
 func (p pipeline[T]) Skip(n int) Stream[T] {
 	return pipeline[T](func(s sink[T]) {
-		p.copyInto(skipWrapSink(s, n))
+		p.copyInto(skipSink(s, n))
 	})
 }
 
-func skipWrapSink[T any](s sink[T], n int) sink[T] {
+func skipSink[T any](s sink[T], n int) sink[T] {
 	return &chainedSink[T, T]{
 		sink: s,
 		acceptFunc: func(x T) {

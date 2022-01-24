@@ -13,8 +13,8 @@ func TestChainedSink(t *testing.T) {
 			t.Logf("sink: %s", x)
 		},
 	}
-	q := mapWrapSink(s, func(i int) string { return fmt.Sprintf(">>%d<<", i) })
-	r := filterWrapSink(q, func(i int) bool { return i > 1 })
+	q := mapSink(s, func(i int) string { return fmt.Sprintf(">>%d<<", i) })
+	r := filterSink(q, func(i int) bool { return i > 1 })
 
 	r.accept(10)
 }
