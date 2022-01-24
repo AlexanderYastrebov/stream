@@ -292,10 +292,12 @@ func (p *pipeline[T]) Max(less func(T, T) bool) (T, bool) {
 	return s.value, s.hasValue
 }
 
-func (p *pipeline[T]) Count() int {
-	return Reduce[T, int](p, 0, func(a int, _ T) int { return a + 1 })
+func (p *pipeline[T]) Count() (result int) {
+	p.ForEach(func(x T) { result++ })
+	return
 }
 
-func (p *pipeline[T]) ToSlice() []T {
-	return Reduce[T, []T](p, nil, func(a []T, e T) []T { return append(a, e) })
+func (p *pipeline[T]) ToSlice() (result []T) {
+	p.ForEach(func(x T) { result = append(result, x) })
+	return
 }
