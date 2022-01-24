@@ -150,3 +150,10 @@ func (s *maxSink[T]) accept(x T) {
 		s.value = x
 	}
 }
+
+type forwardingSink[T any] struct {
+	sink[T]
+}
+
+func (forwardingSink[T]) begin() {}
+func (forwardingSink[T]) end()   {}

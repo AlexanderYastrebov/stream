@@ -380,3 +380,24 @@ func ExampleMinMax() {
 	// 1 true
 	// 0 false
 }
+
+func ExampleAppend() {
+	stream.Of(1, 2, 3).
+		Append(stream.Of(4, 5, 6)).
+		Filter(func(x int) bool {
+			return x%2 == 0
+		}).
+		ForEach(print[int])
+
+	stream.Of("a", "bb").
+		Append(stream.Of("ccc").Peek(func(string) { panic("oops") })).
+		Limit(2). // appended stream is not evaluated
+		ForEach(print[string])
+
+	// Output:
+	// 2
+	// 4
+	// 6
+	// a
+	// bb
+}

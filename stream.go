@@ -18,6 +18,7 @@ type Stream[T any] interface {
 	Max(less func(T, T) bool) (T, bool)
 	Count() int
 	ToSlice() []T
+	Append(Stream[T]) Stream[T]
 }
 
 func Of[T any](x ...T) Stream[T] {
@@ -300,4 +301,22 @@ func (p *pipeline[T]) Count() (result int) {
 func (p *pipeline[T]) ToSlice() (result []T) {
 	p.ForEach(func(x T) { result = append(result, x) })
 	return
+}
+
+func (p *pipeline[T]) Append(st Stream[T]) Stream[T] {
+	q, ok := st.(*pipeline[T])
+	if !ok {
+		panic("unexpected stream type")
+	}
+	return &pipeline[T]{
+		evaluate: func(s sink[T]) {
+			fs := forwardingSink[T]{s}
+			s.begin()
+			p.evaluate(fs)
+			if !s.done() {
+				q.evaluate(fs)
+			}
+			s.end()
+		},
+	}
 }
