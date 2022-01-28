@@ -1,27 +1,41 @@
 package stream
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
 
-func TestSliceIterator(t *testing.T) {
-	in := []string{"a", "b", "c"}
-	ts := &testSink[string]{}
+func TestIterators(t *testing.T) {
+	for _, tc := range []struct {
+		iterator iterator[string]
+		limit    int
+		expect   []string
+	}{
+		{
+			iterator: sliceIterator[string]([]string{"a", "b", "c"}),
+			limit:    -1,
+			expect:   []string{"begin", "accept(a)", "accept(b)", "accept(c)", "end"},
+		},
+		{
+			iterator: sliceIterator[string]([]string{"a", "b", "c"}),
+			limit:    0,
+			expect:   []string{"begin", "end"},
+		},
+		{
+			iterator: sliceIterator[string]([]string{"a", "b", "c"}),
+			limit:    1,
+			expect:   []string{"begin", "accept(a)", "end"},
+		},
+	} {
+		t.Run(fmt.Sprintf("%#v %d", tc.iterator, tc.limit), func(t *testing.T) {
+			s := &testSink[string]{limit: tc.limit}
 
-	sliceIterator[string](in).copyInto(ts)
+			tc.iterator.copyInto(s)
 
-	if !reflect.DeepEqual(ts.result, in) {
-		t.Errorf("wrong result, expected: %v, got: %v", in, ts.result)
-	}
-
-	in = []string{"a", "b"}
-	ts = &testSink[string]{}
-	ts.setLimit(2)
-
-	sliceIterator[string](in).copyInto(ts)
-
-	if !reflect.DeepEqual(ts.result, in) {
-		t.Errorf("wrong result, expected: %v, got: %v", in, ts.result)
+			if !reflect.DeepEqual(tc.expect, s.log) {
+				t.Errorf("wrong result, expected: %v, got: %v", tc.expect, s.log)
+			}
+		})
 	}
 }

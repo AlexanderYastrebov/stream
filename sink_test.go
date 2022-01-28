@@ -7,34 +7,29 @@ import (
 
 type testSink[T any] struct {
 	count        int
-	limit        *int
+	limit        int
 	began, ended bool
-	result       []T
-}
-
-func (s *testSink[T]) setLimit(n int) *testSink[T] {
-	s.limit = &n
-	return s
+	log          []string
 }
 
 func (s *testSink[T]) begin() {
-	s.began = true
+	s.log = append(s.log, "begin")
 }
 
 func (s *testSink[T]) done() bool {
-	if s.limit == nil {
+	if s.limit < 0 {
 		return false
 	}
-	return s.count >= *s.limit
+	return s.count >= s.limit
 }
 
 func (s *testSink[T]) accept(x T) {
-	s.result = append(s.result, x)
+	s.log = append(s.log, fmt.Sprintf("accept(%v)", x))
 	s.count++
 }
 
 func (s *testSink[T]) end() {
-	s.ended = true
+	s.log = append(s.log, "end")
 }
 
 func TestChainedSink(t *testing.T) {
