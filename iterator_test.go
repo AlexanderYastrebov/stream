@@ -9,10 +9,11 @@ func TestSliceIterator(t *testing.T) {
 	in := []string{"a", "b", "c"}
 	it := sliceIterator[string](in)
 
-	var res []string
-	it.copyInto(consumerSink[string](func(s string) { res = append(res, s) }))
+	ts := &testSink[string]{}
 
-	if !reflect.DeepEqual(res, in) {
-		t.Errorf("wrong result, expected: %v, got: %v", in, res)
+	it.copyInto(ts)
+
+	if !reflect.DeepEqual(ts.result, in) {
+		t.Errorf("wrong result, expected: %v, got: %v", in, ts.result)
 	}
 }

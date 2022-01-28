@@ -6,9 +6,15 @@ import (
 )
 
 type testSink[T any] struct {
-	limit        int
+	count        int
+	limit        *int
 	began, ended bool
 	result       []T
+}
+
+func (s *testSink[T]) setLimit(n int) *testSink[T] {
+	s.limit = &n
+	return s
 }
 
 func (s *testSink[T]) begin() {
@@ -16,12 +22,15 @@ func (s *testSink[T]) begin() {
 }
 
 func (s *testSink[T]) done() bool {
-	return s.limit <= 0
+	if s.limit == nil {
+		return false
+	}
+	return s.count >= *s.limit
 }
 
 func (s *testSink[T]) accept(x T) {
 	s.result = append(s.result, x)
-	s.limit--
+	s.count++
 }
 
 func (s *testSink[T]) end() {
