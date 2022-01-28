@@ -57,8 +57,7 @@ func (s *sortedSink[T]) end() {
 	sort.SliceStable(s.slice, func(i, j int) bool {
 		return s.less(s.slice[i], s.slice[j])
 	})
-	var it iterator[T] = &sliceIterator[T]{s.slice}
-	copyInto(it, s.downstream)
+	sliceIterator[T](s.slice).copyInto(s.downstream)
 	s.slice = nil
 }
 

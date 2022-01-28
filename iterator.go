@@ -1,26 +1,31 @@
 package stream
 
 type iterator[T any] interface {
-	advance(action func(T)) bool
+	copyInto(sink[T])
 }
 
-type sliceIterator[T any] struct {
-	x []T
-}
+type sliceIterator[T any] []T
 
-func (it *sliceIterator[T]) advance(action func(T)) bool {
-	if len(it.x) > 0 {
-		action(it.x[0])
-		it.x = it.x[1:]
+func (it sliceIterator[T]) copyInto(s sink[T]) {
+	s.begin()
+	for _, v := range it {
+		if !s.done() {
+			s.accept(v)
+		} else {
+			break
+		}
 	}
-	return len(it.x) > 0
+	s.end()
 }
 
 type generatorIterator[T any] func() T
 
-func (it generatorIterator[T]) advance(action func(T)) bool {
-	action(it())
-	return true
+func (it generatorIterator[T]) copyInto(s sink[T]) {
+	s.begin()
+	for !s.done() {
+		s.accept(it())
+	}
+	s.end()
 }
 
 type seedIterator[T any] struct {
@@ -28,22 +33,24 @@ type seedIterator[T any] struct {
 	operator func(T) T
 }
 
-func (it *seedIterator[T]) advance(action func(T)) bool {
-	action(it.x)
-	it.x = it.operator(it.x)
-	return true
+func (it *seedIterator[T]) copyInto(s sink[T]) {
+	s.begin()
+	for !s.done() {
+		s.accept(it.x)
+		it.x = it.operator(it.x)
+	}
+	s.end()
 }
 
 type whileIterator[T any] struct {
-	check   func() bool
+	hasNext func() bool
 	next    func() T
-	hasNext bool
 }
 
-func (it *whileIterator[T]) advance(action func(T)) bool {
-	if it.hasNext {
-		action(it.next())
-		it.hasNext = it.check()
+func (it *whileIterator[T]) copyInto(s sink[T]) {
+	s.begin()
+	for !s.done() && it.hasNext() {
+		s.accept(it.next())
 	}
-	return it.hasNext
+	s.end()
 }

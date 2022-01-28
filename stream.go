@@ -28,7 +28,7 @@ func Of[T any](x ...T) Stream[T] {
 }
 
 func Slice[T any](x []T) Stream[T] {
-	return head[T](&sliceIterator[T]{x})
+	return head[T](sliceIterator[T](x))
 }
 
 func Generate[T any](generator func() T) Stream[T] {
@@ -40,7 +40,7 @@ func Iterate[T any](seed T, operator func(T) T) Stream[T] {
 }
 
 func While[T any](hasNext func() bool, supplier func() T) Stream[T] {
-	return head[T](&whileIterator[T]{hasNext, supplier, hasNext()})
+	return head[T](&whileIterator[T]{hasNext, supplier})
 }
 
 func Map[T, R any](st Stream[T], mapper func(element T) R) Stream[R] {
@@ -113,15 +113,8 @@ type stage[T any] func(sink[T])
 
 func head[T any](it iterator[T]) Stream[T] {
 	return stage[T](func(s sink[T]) {
-		copyInto(it, s)
+		it.copyInto(s)
 	})
-}
-
-func copyInto[T any](it iterator[T], s sink[T]) {
-	s.begin()
-	for !s.done() && it.advance(s.accept) {
-	}
-	s.end()
 }
 
 func (p stage[T]) copyInto(s sink[T]) {
