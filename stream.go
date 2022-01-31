@@ -73,7 +73,7 @@ func flatMapSink[T, R any](s sink[R], mapper func(element T) Stream[R]) sink[T] 
 	}
 }
 
-func Reduce[T, A any](st Stream[T], identity A, accumulator func(A, T) A) A {
+func Collect[T, A any](st Stream[T], identity A, accumulator func(A, T)) A {
 	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
 
 	st.copyInto(a)

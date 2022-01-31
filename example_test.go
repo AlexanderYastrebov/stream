@@ -264,12 +264,11 @@ func ExampleGroupBy() {
 		{"Carl", "C"},
 	})
 
-	g := stream.Reduce(s, make(map[string][]string), func(m map[string][]string, e struct {
+	g := stream.Collect(s, make(map[string][]string), func(m map[string][]string, e struct {
 		name  string
 		grade string
-	}) map[string][]string {
+	}) {
 		m[e.grade] = append(m[e.grade], e.name)
-		return m
 	})
 	fmt.Println(g)
 

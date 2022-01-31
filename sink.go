@@ -35,11 +35,11 @@ func (base) end()       {}
 type accumulatorSink[T, A any] struct {
 	base
 	value       A
-	accumulator func(a A, b T) A
+	accumulator func(a A, b T)
 }
 
 func (s *accumulatorSink[T, A]) accept(x T) {
-	s.value = s.accumulator(s.value, x)
+	s.accumulator(s.value, x)
 }
 
 type sortedSink[T any] struct {
