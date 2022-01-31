@@ -205,12 +205,17 @@ func (p stage[T]) ForEach(consumer func(T)) {
 }
 
 func (p stage[T]) Reduce(accumulator func(T, T) T) (T, bool) {
-	var zero T
+	var result T
 	foundAny := false
-	return Reduce[T, T](p, zero, func(a T, e T) T {
-		foundAny = true
-		return accumulator(a, e)
-	}), foundAny
+	p.ForEach(func(x T) {
+		if !foundAny {
+			foundAny = true
+			result = x
+		} else {
+			result = accumulator(result, x)
+		}
+	})
+	return result, foundAny
 }
 
 func (p stage[T]) AllMatch(predicate func(element T) bool) bool {
