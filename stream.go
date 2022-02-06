@@ -1,7 +1,5 @@
 package stream
 
-import "constraints"
-
 type Stream[T any] interface {
 	Filter(predicate func(element T) bool) Stream[T]
 	Peek(consumer func(element T)) Stream[T]
@@ -62,34 +60,6 @@ func Iterate[T any](seed T, operator func(T) T) Stream[T] {
 
 func While[T any](hasNext func() bool, supplier func() T) Stream[T] {
 	return head[T](&whileIterator[T]{hasNext, supplier})
-}
-
-func NaturalOrder[T constraints.Ordered](a, b T) bool { return a < b }
-
-func ReverseOrder[T constraints.Ordered](a, b T) bool { return a > b }
-
-type observer[T comparable] map[T]struct{}
-
-func (o observer[T]) observe(x T) bool {
-	_, ok := o[x]
-	if !ok {
-		o[x] = struct{}{}
-	}
-	return !ok
-}
-
-func Distinct[T comparable]() func(T) bool {
-	o := make(observer[T])
-	return func(x T) bool {
-		return o.observe(x)
-	}
-}
-
-func DistinctUsing[T any, C comparable](mapper func(T) C) func(T) bool {
-	o := make(observer[C])
-	return func(x T) bool {
-		return o.observe(mapper(x))
-	}
 }
 
 type stage[T any] func(sink[T])
@@ -213,11 +183,15 @@ func (p stage[T]) Max(less func(T, T) bool) (T, bool) {
 }
 
 func (p stage[T]) Count() (result int) {
-	p.ForEach(func(x T) { result++ })
+	p.ForEach(func(x T) {
+		result++
+	})
 	return
 }
 
 func (p stage[T]) ToSlice() (result []T) {
-	p.ForEach(func(x T) { result = append(result, x) })
+	p.ForEach(func(x T) {
+		result = append(result, x)
+	})
 	return
 }
