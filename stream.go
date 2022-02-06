@@ -65,9 +65,7 @@ func While[T any](hasNext func() bool, supplier func() T) Stream[T] {
 type stage[T any] func(sink[T])
 
 func head[T any](it iterator[T]) Stream[T] {
-	return stage[T](func(s sink[T]) {
-		it.copyInto(s)
-	})
+	return stage[T](it.copyInto)
 }
 
 func (p stage[T]) copyInto(s sink[T]) {
@@ -106,11 +104,11 @@ func (p stage[T]) Sorted(less func(T, T) bool) Stream[T] {
 
 func (p stage[T]) Append(st Stream[T]) Stream[T] {
 	return stage[T](func(s sink[T]) {
-		fs := forwardingSink[T]{s}
+		as := appendSink[T]{s}
 		s.begin()
-		p.copyInto(fs)
-		if !s.done() {
-			st.copyInto(fs)
+		p.copyInto(as)
+		if !as.done() {
+			st.copyInto(as)
 		}
 		s.end()
 	})

@@ -209,9 +209,9 @@ func (s *maxSink[T]) accept(x T) {
 	}
 }
 
-type forwardingSink[T any] struct {
+type appendSink[T any] struct {
 	sink[T]
 }
 
-func (forwardingSink[T]) begin() {}
-func (forwardingSink[T]) end()   {}
+func (appendSink[T]) begin() {}
+func (appendSink[T]) end()   {}
