@@ -26,6 +26,73 @@ func (s *chainedSink[IN, OUT]) accept(x IN) {
 	s.acceptFunc(x)
 }
 
+func filterSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
+	return &chainedSink[T, T]{
+		sink: s,
+		acceptFunc: func(x T) {
+			if predicate(x) {
+				s.accept(x)
+			}
+		},
+	}
+}
+
+func peekSink[T any](s sink[T], consumer func(element T)) sink[T] {
+	return &chainedSink[T, T]{
+		sink: s,
+		acceptFunc: func(x T) {
+			consumer(x)
+			s.accept(x)
+		},
+	}
+}
+
+func limitSink[T any](s sink[T], n int) sink[T] {
+	return &chainedSink[T, T]{
+		sink: s,
+		doneFunc: func() bool {
+			return n <= 0 || s.done()
+		},
+		acceptFunc: func(x T) {
+			if n > 0 {
+				s.accept(x)
+				n--
+			}
+		},
+	}
+}
+
+func skipSink[T any](s sink[T], n int) sink[T] {
+	return &chainedSink[T, T]{
+		sink: s,
+		acceptFunc: func(x T) {
+			if n > 0 {
+				n--
+				return
+			}
+			s.accept(x)
+		},
+	}
+}
+
+func mapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
+	return &chainedSink[T, R]{
+		sink: s,
+		acceptFunc: func(x T) {
+			s.accept(mapper(x))
+		},
+	}
+}
+
+func flatMapSink[T, R any](s sink[R], mapper func(element T) Stream[R]) sink[T] {
+	return &chainedSink[T, R]{
+		sink: s,
+		acceptFunc: func(x T) {
+			mapper(x).ForEach(s.accept)
+		},
+	}
+}
+
 type base struct{}
 
 func (base) begin()     {}

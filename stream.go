@@ -8,6 +8,8 @@ type Stream[T any] interface {
 	Limit(n int) Stream[T]
 	Skip(n int) Stream[T]
 	Sorted(less func(T, T) bool) Stream[T]
+	Append(Stream[T]) Stream[T]
+
 	ForEach(consumer func(element T))
 	Reduce(accumulator func(T, T) T) (T, bool)
 	AllMatch(predicate func(element T) bool) bool
@@ -18,9 +20,28 @@ type Stream[T any] interface {
 	Max(less func(T, T) bool) (T, bool)
 	Count() int
 	ToSlice() []T
-	Append(Stream[T]) Stream[T]
 
 	copyInto(sink[T])
+}
+
+func Map[T, R any](st Stream[T], mapper func(element T) R) Stream[R] {
+	return stage[R](func(s sink[R]) {
+		st.copyInto(mapSink(s, mapper))
+	})
+}
+
+func FlatMap[T, R any](st Stream[T], mapper func(element T) Stream[R]) Stream[R] {
+	return stage[R](func(s sink[R]) {
+		st.copyInto(flatMapSink(s, mapper))
+	})
+}
+
+func Collect[T, A any](st Stream[T], identity A, accumulator func(A, T)) A {
+	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
+
+	st.copyInto(a)
+
+	return a.value
 }
 
 func Of[T any](x ...T) Stream[T] {
@@ -41,44 +62,6 @@ func Iterate[T any](seed T, operator func(T) T) Stream[T] {
 
 func While[T any](hasNext func() bool, supplier func() T) Stream[T] {
 	return head[T](&whileIterator[T]{hasNext, supplier})
-}
-
-func Map[T, R any](st Stream[T], mapper func(element T) R) Stream[R] {
-	return stage[R](func(s sink[R]) {
-		st.copyInto(mapSink(s, mapper))
-	})
-}
-
-func mapSink[T, R any](s sink[R], mapper func(element T) R) sink[T] {
-	return &chainedSink[T, R]{
-		sink: s,
-		acceptFunc: func(x T) {
-			s.accept(mapper(x))
-		},
-	}
-}
-
-func FlatMap[T, R any](st Stream[T], mapper func(element T) Stream[R]) Stream[R] {
-	return stage[R](func(s sink[R]) {
-		st.copyInto(flatMapSink(s, mapper))
-	})
-}
-
-func flatMapSink[T, R any](s sink[R], mapper func(element T) Stream[R]) sink[T] {
-	return &chainedSink[T, R]{
-		sink: s,
-		acceptFunc: func(x T) {
-			mapper(x).ForEach(s.accept)
-		},
-	}
-}
-
-func Collect[T, A any](st Stream[T], identity A, accumulator func(A, T)) A {
-	a := &accumulatorSink[T, A]{value: identity, accumulator: accumulator}
-
-	st.copyInto(a)
-
-	return a.value
 }
 
 func NaturalOrder[T constraints.Ordered](a, b T) bool { return a < b }
@@ -127,31 +110,10 @@ func (p stage[T]) Filter(predicate func(T) bool) Stream[T] {
 	})
 }
 
-func filterSink[T any](s sink[T], predicate func(element T) bool) sink[T] {
-	return &chainedSink[T, T]{
-		sink: s,
-		acceptFunc: func(x T) {
-			if predicate(x) {
-				s.accept(x)
-			}
-		},
-	}
-}
-
 func (p stage[T]) Peek(consumer func(T)) Stream[T] {
 	return stage[T](func(s sink[T]) {
 		p.copyInto(peekSink(s, consumer))
 	})
-}
-
-func peekSink[T any](s sink[T], consumer func(element T)) sink[T] {
-	return &chainedSink[T, T]{
-		sink: s,
-		acceptFunc: func(x T) {
-			consumer(x)
-			s.accept(x)
-		},
-	}
 }
 
 func (p stage[T]) Limit(n int) Stream[T] {
@@ -160,43 +122,27 @@ func (p stage[T]) Limit(n int) Stream[T] {
 	})
 }
 
-func limitSink[T any](s sink[T], n int) sink[T] {
-	return &chainedSink[T, T]{
-		sink: s,
-		doneFunc: func() bool {
-			return n <= 0 || s.done()
-		},
-		acceptFunc: func(x T) {
-			if n > 0 {
-				s.accept(x)
-				n--
-			}
-		},
-	}
-}
-
 func (p stage[T]) Skip(n int) Stream[T] {
 	return stage[T](func(s sink[T]) {
 		p.copyInto(skipSink(s, n))
 	})
 }
 
-func skipSink[T any](s sink[T], n int) sink[T] {
-	return &chainedSink[T, T]{
-		sink: s,
-		acceptFunc: func(x T) {
-			if n > 0 {
-				n--
-				return
-			}
-			s.accept(x)
-		},
-	}
-}
-
 func (p stage[T]) Sorted(less func(T, T) bool) Stream[T] {
 	return stage[T](func(s sink[T]) {
 		p.copyInto(&sortedSink[T]{downstream: s, less: less})
+	})
+}
+
+func (p stage[T]) Append(st Stream[T]) Stream[T] {
+	return stage[T](func(s sink[T]) {
+		fs := forwardingSink[T]{s}
+		s.begin()
+		p.copyInto(fs)
+		if !s.done() {
+			st.copyInto(fs)
+		}
+		s.end()
 	})
 }
 
@@ -274,16 +220,4 @@ func (p stage[T]) Count() (result int) {
 func (p stage[T]) ToSlice() (result []T) {
 	p.ForEach(func(x T) { result = append(result, x) })
 	return
-}
-
-func (p stage[T]) Append(st Stream[T]) Stream[T] {
-	return stage[T](func(s sink[T]) {
-		fs := forwardingSink[T]{s}
-		s.begin()
-		p.copyInto(fs)
-		if !s.done() {
-			st.copyInto(fs)
-		}
-		s.end()
-	})
 }
