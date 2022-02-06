@@ -225,7 +225,7 @@ func ExampleDistinctUsing() {
 }
 
 func ExampleAllButLast() {
-	input := []string{"foo", "bar", "baz", "goo", "bar", "gaz"}
+	input := []string{"foo", "bar", "baz", "bar", "goo", "bar", "gaz"}
 	bars := stream.Slice(input).
 		Filter(func(s string) bool {
 			return s == "bar"
@@ -235,19 +235,18 @@ func ExampleAllButLast() {
 
 	result := stream.Slice(input).
 		Filter(func(s string) bool {
-			if bars > 1 && s == "bar" {
+			if s == "bar" {
 				bars--
-				return false
-			} else {
-				return true
+				return bars == 0
 			}
+			return true
 		}).
 		ToSlice()
 
 	fmt.Println(result)
 
 	// Output:
-	// bars: 2
+	// bars: 3
 	// [foo baz goo bar gaz]
 }
 
