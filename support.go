@@ -1,6 +1,6 @@
 package stream
 
-import "constraints"
+import "golang.org/x/exp/constraints"
 
 func NaturalOrder[T constraints.Ordered](a, b T) bool {
 	return a < b
