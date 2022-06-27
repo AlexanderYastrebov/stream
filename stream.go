@@ -165,19 +165,21 @@ func (p stage[T]) FindFirst() (T, bool) {
 }
 
 func (p stage[T]) Min(less func(T, T) bool) (T, bool) {
-	s := &minSink[T]{less: less}
-
-	p.copyInto(s)
-
-	return s.value, s.hasValue
+	return p.Reduce(func(r, x T) T {
+		if less(x, r) {
+			return x
+		}
+		return r
+	})
 }
 
 func (p stage[T]) Max(less func(T, T) bool) (T, bool) {
-	s := &maxSink[T]{less: less}
-
-	p.copyInto(s)
-
-	return s.value, s.hasValue
+	return p.Reduce(func(r, x T) T {
+		if less(r, x) {
+			return x
+		}
+		return r
+	})
 }
 
 func (p stage[T]) Count() (result int) {
