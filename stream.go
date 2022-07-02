@@ -2,6 +2,7 @@ package stream
 
 type Stream[T any] interface {
 	Filter(predicate func(element T) bool) Stream[T]
+	Map(predicate func(element T) T) Stream[T]
 	Peek(consumer func(element T)) Stream[T]
 	Limit(n int) Stream[T]
 	Skip(n int) Stream[T]
@@ -75,6 +76,12 @@ func (p stage[T]) copyInto(s sink[T]) {
 func (p stage[T]) Filter(predicate func(T) bool) Stream[T] {
 	return stage[T](func(s sink[T]) {
 		p.copyInto(filterSink(s, predicate))
+	})
+}
+
+func (p stage[T]) Map(mapper func(T) T) Stream[T] {
+	return stage[T](func(s sink[T]) {
+		p.copyInto(mapSink(s, mapper))
 	})
 }
 

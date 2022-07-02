@@ -104,6 +104,19 @@ func ExampleFilter() {
 	// 3
 }
 
+func ExampleMap() {
+	stream.Of("a", "bb", "ccc").
+		Map(func(s string) string {
+			return s + s
+		}).
+		ForEach(print[string])
+
+	// Output:
+	// aa
+	// bbbb
+	// cccccc
+}
+
 func ExampleSkipLimit() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Skip(1).
