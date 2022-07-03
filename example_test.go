@@ -184,13 +184,13 @@ func ExampleMapReduce() {
 	// 10 true
 }
 
-func ExampleFlatMap() {
+func ExampleFlatMapSameType() {
 	split := func(s string) stream.Stream[string] {
 		return stream.Slice(strings.Split(s, ""))
 	}
 
-	s := stream.Of("a", "bb", "ccc", "dddd")
-	stream.FlatMap(s, split).
+	stream.Of("a", "bb", "ccc", "dddd").
+		FlatMap(split).
 		Limit(4).
 		ForEach(print[string])
 
@@ -199,6 +199,23 @@ func ExampleFlatMap() {
 	// b
 	// b
 	// c
+}
+
+func ExampleFlatMap() {
+	runes := func(s string) stream.Stream[rune] {
+		return stream.Slice([]rune(s))
+	}
+
+	s := stream.Of("a", "bb", "ccc", "dddd")
+	stream.FlatMap(s, runes).
+		Limit(4).
+		ForEach(print[rune])
+
+	// Output:
+	// 97
+	// 98
+	// 98
+	// 99
 }
 
 func ExampleDistinct() {
