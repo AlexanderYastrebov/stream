@@ -18,12 +18,11 @@ func ExampleWordsDict() {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanWords)
 
-	lines := stream.While(scanner.Scan, scanner.Text)
-	words := stream.FlatMap(lines, func(line string) stream.Stream[string] {
-		return stream.Slice(strings.Split(line, " "))
-	})
-	stream.Map(words, strings.ToLower).
+	stream.While(scanner.Scan, scanner.Text).
+		Map(strings.ToLower).
+		Map(func(s string) string { return strings.TrimRight(s, ".,") }).
 		Filter(stream.Distinct[string]()).
 		Sorted(stream.NaturalOrder[string]).
 		Limit(10).
@@ -32,9 +31,9 @@ func ExampleWordsDict() {
 	// Output:
 	// ad
 	// adipiscing
-	// aliqua.
+	// aliqua
 	// aliquip
-	// amet,
+	// amet
 	// anim
 	// aute
 	// cillum
