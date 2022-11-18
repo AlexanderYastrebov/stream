@@ -280,10 +280,12 @@ func ExampleAllButLast() {
 }
 
 func ExampleGroupBy() {
-	s := stream.Slice([]struct {
+	type result struct {
 		name  string
 		grade string
-	}{
+	}
+
+	s := stream.Slice([]result{
 		{"Alice", "A"},
 		{"Bob", "B"},
 		{"Charlie", "C"},
@@ -292,11 +294,8 @@ func ExampleGroupBy() {
 		{"Carl", "C"},
 	})
 
-	g := stream.Collect(s, make(map[string][]string), func(m map[string][]string, e struct {
-		name  string
-		grade string
-	}) {
-		m[e.grade] = append(m[e.grade], e.name)
+	g := stream.Collect(s, make(map[string][]string), func(m map[string][]string, r result) {
+		m[r.grade] = append(m[r.grade], r.name)
 	})
 	fmt.Println(g)
 
