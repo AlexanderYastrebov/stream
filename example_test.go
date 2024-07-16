@@ -24,9 +24,9 @@ func ExampleWordsDict() {
 		Map(strings.ToLower).
 		Map(func(s string) string { return strings.TrimRight(s, ".,") }).
 		Filter(stream.Distinct[string]()).
-		Sorted(stream.NaturalOrder[string]).
+		Sorted(stream.NaturalOrder).
 		Limit(10).
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// ad
@@ -44,7 +44,7 @@ func ExampleWordsDict() {
 func ExampleGenerate() {
 	stream.Generate(func() string { return "a" }).
 		Limit(3).
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// a
@@ -55,7 +55,7 @@ func ExampleGenerate() {
 func ExampleIterate() {
 	stream.Iterate(3, func(x int) int { return x + 2 }).
 		Limit(4).
-		ForEach(print[int])
+		ForEach(print)
 
 	// Output:
 	// 3
@@ -71,7 +71,7 @@ func ExampleFib() {
 
 	stream.Map(pairs, func(x []int) int { return x[0] }).
 		Limit(10).
-		ForEach(print[int])
+		ForEach(print)
 
 	// Output:
 	// 0
@@ -91,7 +91,7 @@ func ExampleFilter() {
 		Filter(func(s string) bool {
 			return len(s) > 2
 		}).
-		Peek(print[string]).
+		Peek(print).
 		Count()
 
 	fmt.Println(n)
@@ -108,7 +108,7 @@ func ExampleMap() {
 		Map(func(s string) string {
 			return s + s
 		}).
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// aa
@@ -120,14 +120,14 @@ func ExampleSkipLimit() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Skip(1).
 		Limit(3).
-		Peek(print[string]).
+		Peek(print).
 		Count()
 
 	fmt.Println(n)
 
 	n = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Limit(0).
-		Peek(print[string]).
+		Peek(print).
 		Count()
 
 	fmt.Println(n)
@@ -143,11 +143,11 @@ func ExampleSkipLimit() {
 func ExampleSorted() {
 	stream.Of("bb", "a", "dddd", "ccc").
 		Sorted(stream.NaturalOrder[string]).
-		ForEach(print[string])
+		ForEach(print)
 
 	stream.Of("bb", "a", "dddd", "ccc").
 		Sorted(stream.ReverseOrder[string]).
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// a
@@ -165,7 +165,7 @@ func ExampleForEach() {
 		Filter(func(s string) bool {
 			return len(s) > 2
 		}).
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// ccc
@@ -192,7 +192,7 @@ func ExampleFlatMapSameType() {
 	stream.Of("a", "bb", "ccc", "dddd").
 		FlatMap(split).
 		Limit(4).
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// a
@@ -209,7 +209,7 @@ func ExampleFlatMap() {
 	s := stream.Of("a", "bb", "ccc", "dddd")
 	stream.FlatMap(s, runes).
 		Limit(4).
-		ForEach(print[rune])
+		ForEach(print)
 
 	// Output:
 	// 97
@@ -221,7 +221,7 @@ func ExampleFlatMap() {
 func ExampleDistinct() {
 	stream.Of("a", "bb", "bb", "a", "ccc", "a", "dddd").
 		Filter(stream.Distinct[string]()).
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// a
@@ -244,7 +244,7 @@ func ExampleDistinctUsing() {
 		[]string{"a"},
 		[]string{"d", "d", "d", "d"}).
 		Filter(stream.DistinctUsing(concat)).
-		ForEach(print[[]string])
+		ForEach(print)
 
 	// Output:
 	// [a]
@@ -413,12 +413,12 @@ func ExampleAppend() {
 		Filter(func(x int) bool {
 			return x%2 == 0
 		}).
-		ForEach(print[int])
+		ForEach(print)
 
 	stream.Of("a", "bb").
 		Append(stream.Of("ccc").Peek(func(string) { panic("oops") })).
 		Limit(2). // appended stream is not evaluated
-		ForEach(print[string])
+		ForEach(print)
 
 	// Output:
 	// 2

@@ -49,19 +49,19 @@ func Of[T any](x ...T) Stream[T] {
 }
 
 func Slice[T any](x []T) Stream[T] {
-	return head[T](sliceIterator[T](x))
+	return head(sliceIterator[T](x))
 }
 
 func Generate[T any](generator func() T) Stream[T] {
-	return head[T](generatorIterator[T](generator))
+	return head(generatorIterator[T](generator))
 }
 
 func Iterate[T any](seed T, operator func(T) T) Stream[T] {
-	return head[T](&seedIterator[T]{seed, operator})
+	return head(&seedIterator[T]{seed, operator})
 }
 
 func While[T any](hasNext func() bool, supplier func() T) Stream[T] {
-	return head[T](&whileIterator[T]{hasNext, supplier})
+	return head(&whileIterator[T]{hasNext, supplier})
 }
 
 type stage[T any] func(sink[T])
