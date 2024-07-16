@@ -13,7 +13,7 @@ func print[T any](x T) {
 	fmt.Println(x)
 }
 
-func ExampleWordsDict() {
+func Example() {
 	f, _ := os.Open("testdata/lorem.txt")
 	defer f.Close()
 
@@ -64,7 +64,7 @@ func ExampleIterate() {
 	// 9
 }
 
-func ExampleFib() {
+func ExampleIterate_fibonacci() {
 	pairs := stream.Iterate([]int{0, 1}, func(x []int) []int {
 		return []int{x[1], x[0] + x[1]}
 	})
@@ -86,7 +86,7 @@ func ExampleFib() {
 	// 34
 }
 
-func ExampleFilter() {
+func ExampleStream_filter() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool {
 			return len(s) > 2
@@ -103,7 +103,7 @@ func ExampleFilter() {
 	// 3
 }
 
-func ExampleMap() {
+func ExampleStream_map() {
 	stream.Of("a", "bb", "ccc").
 		Map(func(s string) string {
 			return s + s
@@ -116,7 +116,7 @@ func ExampleMap() {
 	// cccccc
 }
 
-func ExampleSkipLimit() {
+func ExampleStream_skipLimit() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Skip(1).
 		Limit(3).
@@ -140,7 +140,7 @@ func ExampleSkipLimit() {
 	// 0
 }
 
-func ExampleSorted() {
+func ExampleStream_sorted() {
 	stream.Of("bb", "a", "dddd", "ccc").
 		Sorted(stream.NaturalOrder[string]).
 		ForEach(print)
@@ -160,7 +160,7 @@ func ExampleSorted() {
 	// a
 }
 
-func ExampleForEach() {
+func ExampleStream_forEach() {
 	stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool {
 			return len(s) > 2
@@ -173,7 +173,7 @@ func ExampleForEach() {
 	// eeeee
 }
 
-func ExampleMapReduce() {
+func ExampleStream_reduce() {
 	s := stream.Of("a", "bb", "ccc", "dddd")
 	n, ok := stream.Map(s, func(s string) int { return len(s) }).
 		Reduce(func(a, b int) int { return a + b })
@@ -184,7 +184,7 @@ func ExampleMapReduce() {
 	// 10 true
 }
 
-func ExampleFlatMapSameType() {
+func ExampleFlatMap_sameType() {
 	split := func(s string) stream.Stream[string] {
 		return stream.Slice(strings.Split(s, ""))
 	}
@@ -253,7 +253,7 @@ func ExampleDistinctUsing() {
 	// [d d d d]
 }
 
-func ExampleAllButLast() {
+func ExampleStream_filterAllButLast() {
 	input := []string{"foo", "bar", "baz", "bar", "goo", "bar", "gaz"}
 	bars := stream.Slice(input).
 		Filter(func(s string) bool {
@@ -279,7 +279,7 @@ func ExampleAllButLast() {
 	// [foo baz goo bar gaz]
 }
 
-func ExampleGroupBy() {
+func ExampleCollect_groupBy() {
 	type result struct {
 		name  string
 		grade string
@@ -303,7 +303,7 @@ func ExampleGroupBy() {
 	// map[A:[Alice Alan] B:[Bob Barbie] C:[Charlie Carl]]
 }
 
-func ExampleAllMatch() {
+func ExampleStream_allMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		AllMatch(func(s string) bool {
 			return len(s) > 3
@@ -323,7 +323,7 @@ func ExampleAllMatch() {
 	// true
 }
 
-func ExampleAnyMatch() {
+func ExampleStream_anyMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		AnyMatch(func(s string) bool {
 			return len(s) > 3
@@ -343,7 +343,7 @@ func ExampleAnyMatch() {
 	// false
 }
 
-func ExampleNoneMatch() {
+func ExampleStream_noneMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		NoneMatch(func(s string) bool {
 			return len(s) > 3
@@ -363,7 +363,7 @@ func ExampleNoneMatch() {
 	// true
 }
 
-func ExampleFindFirst() {
+func ExampleStream_findFirst() {
 	x, ok := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool {
 			return len(s) > 2
@@ -385,7 +385,7 @@ func ExampleFindFirst() {
 	// false
 }
 
-func ExampleMinMax() {
+func ExampleStream_minMax() {
 	x, ok := stream.Of(2, 5, 1, 4, 3).
 		Max(stream.NaturalOrder[int])
 
@@ -407,7 +407,7 @@ func ExampleMinMax() {
 	// 0 false
 }
 
-func ExampleAppend() {
+func ExampleStream_append() {
 	stream.Of(1, 2, 3).
 		Append(stream.Of(4, 5, 6)).
 		Filter(func(x int) bool {
