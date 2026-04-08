@@ -1,6 +1,8 @@
 package stream
 
-import "sort"
+import (
+	"slices"
+)
 
 type sink[T any] interface {
 	begin()
@@ -109,21 +111,19 @@ func (s *accumulatorSink[T, A]) accept(x T) {
 	s.accumulator(s.value, x)
 }
 
-type sortedSink[T any] struct {
+type sortSink[T any] struct {
 	base
 	downstream sink[T]
-	less       func(T, T) bool
+	cmp        func(T, T) int
 	slice      []T
 }
 
-func (s *sortedSink[T]) accept(x T) {
+func (s *sortSink[T]) accept(x T) {
 	s.slice = append(s.slice, x)
 }
 
-func (s *sortedSink[T]) end() {
-	sort.SliceStable(s.slice, func(i, j int) bool {
-		return s.less(s.slice[i], s.slice[j])
-	})
+func (s *sortSink[T]) end() {
+	slices.SortFunc(s.slice, s.cmp)
 	sliceIterator[T](s.slice).copyInto(s.downstream)
 	s.slice = nil
 }

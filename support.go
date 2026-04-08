@@ -1,13 +1,8 @@
 package stream
 
-import "golang.org/x/exp/constraints"
-
-func NaturalOrder[T constraints.Ordered](a, b T) bool {
-	return a < b
-}
-
-func ReverseOrder[T constraints.Ordered](a, b T) bool {
-	return a > b
+func Reverse[T any](f func(T, T) int) func(T, T) int {
+	// https://github.com/golang/go/issues/65632
+	return func(a, b T) int { return f(b, a) }
 }
 
 func Distinct[T comparable]() func(T) bool {
