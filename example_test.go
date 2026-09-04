@@ -86,7 +86,7 @@ func ExampleIterate_fibonacci() {
 	// 34
 }
 
-func ExampleStream_filter() {
+func ExampleStream_Filter() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool {
 			return len(s) > 2
@@ -103,7 +103,7 @@ func ExampleStream_filter() {
 	// 3
 }
 
-func ExampleStream_map() {
+func ExampleStream_Map() {
 	stream.Of("a", "bb", "ccc").
 		Map(func(s string) string {
 			return s + s
@@ -116,17 +116,10 @@ func ExampleStream_map() {
 	// cccccc
 }
 
-func ExampleStream_skipLimit() {
+func ExampleStream_Skip() {
 	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Skip(1).
 		Limit(3).
-		Peek(print).
-		Count()
-
-	fmt.Println(n)
-
-	n = stream.Of("a", "bb", "ccc", "dddd", "eeeee").
-		Limit(0).
 		Peek(print).
 		Count()
 
@@ -137,10 +130,35 @@ func ExampleStream_skipLimit() {
 	// ccc
 	// dddd
 	// 3
-	// 0
 }
 
-func ExampleStream_sort() {
+func ExampleStream_Limit() {
+	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		Limit(3).
+		Skip(1).
+		Peek(print).
+		Count()
+
+	fmt.Println(n)
+
+	// Output:
+	// bb
+	// ccc
+	// 2
+}
+
+func ExampleStream_Peek() {
+	stream.Of("a", "bb", "ccc").
+		Peek(print).
+		Count()
+
+	// Output:
+	// a
+	// bb
+	// ccc
+}
+
+func ExampleStream_Sort() {
 	stream.Of("bb", "a", "dddd", "ccc").
 		Sort(cmp.Compare).
 		ForEach(print)
@@ -160,7 +178,7 @@ func ExampleStream_sort() {
 	// a
 }
 
-func ExampleStream_forEach() {
+func ExampleStream_ForEach() {
 	stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool {
 			return len(s) > 2
@@ -173,7 +191,7 @@ func ExampleStream_forEach() {
 	// eeeee
 }
 
-func ExampleStream_reduce() {
+func ExampleStream_Reduce() {
 	n, ok := stream.Of("a", "bb", "ccc", "dddd").
 		Map(func(s string) int { return len(s) }).
 		Reduce(func(a, b int) int { return a + b })
@@ -184,7 +202,7 @@ func ExampleStream_reduce() {
 	// 10 true
 }
 
-func ExampleStream_flatMap_sameType() {
+func ExampleStream_FlatMap_sameType() {
 	split := func(s string) stream.Stream[string] {
 		return stream.Slice(strings.Split(s, ""))
 	}
@@ -201,7 +219,7 @@ func ExampleStream_flatMap_sameType() {
 	// c
 }
 
-func ExampleStream_flatMap() {
+func ExampleStream_FlatMap() {
 	runes := func(s string) stream.Stream[rune] {
 		return stream.Slice([]rune(s))
 	}
@@ -253,7 +271,7 @@ func ExampleDistinctUsing() {
 	// [d d d d]
 }
 
-func ExampleStream_filterAllButLast() {
+func ExampleStream_Filter_allButLast() {
 	input := []string{"foo", "bar", "baz", "bar", "goo", "bar", "gaz"}
 	bars := stream.Slice(input).
 		Filter(func(s string) bool {
@@ -279,7 +297,7 @@ func ExampleStream_filterAllButLast() {
 	// [foo baz goo bar gaz]
 }
 
-func ExampleStream_collect_groupBy() {
+func ExampleStream_Collect_groupBy() {
 	type result struct {
 		name  string
 		grade string
@@ -302,7 +320,7 @@ func ExampleStream_collect_groupBy() {
 	// map[A:[Alice Alan] B:[Bob Barbie] C:[Charlie Carl]]
 }
 
-func ExampleStream_allMatch() {
+func ExampleStream_AllMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		AllMatch(func(s string) bool {
 			return len(s) > 3
@@ -322,7 +340,7 @@ func ExampleStream_allMatch() {
 	// true
 }
 
-func ExampleStream_anyMatch() {
+func ExampleStream_AnyMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		AnyMatch(func(s string) bool {
 			return len(s) > 3
@@ -342,7 +360,7 @@ func ExampleStream_anyMatch() {
 	// false
 }
 
-func ExampleStream_noneMatch() {
+func ExampleStream_NoneMatch() {
 	m := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		NoneMatch(func(s string) bool {
 			return len(s) > 3
@@ -362,7 +380,7 @@ func ExampleStream_noneMatch() {
 	// true
 }
 
-func ExampleStream_findFirst() {
+func ExampleStream_FindFirst() {
 	x, ok := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
 		Filter(func(s string) bool {
 			return len(s) > 2
@@ -384,13 +402,8 @@ func ExampleStream_findFirst() {
 	// false
 }
 
-func ExampleStream_minMax() {
+func ExampleStream_Min() {
 	x, ok := stream.Of(2, 5, 1, 4, 3).
-		Max(cmp.Compare)
-
-	fmt.Println(x, ok)
-
-	x, ok = stream.Of(2, 5, 1, 4, 3).
 		Min(cmp.Compare)
 
 	fmt.Println(x, ok)
@@ -401,12 +414,47 @@ func ExampleStream_minMax() {
 	fmt.Println(x, ok)
 
 	// Output:
-	// 5 true
 	// 1 true
 	// 0 false
 }
 
-func ExampleStream_append() {
+func ExampleStream_Max() {
+	x, ok := stream.Of(2, 5, 1, 4, 3).
+		Max(cmp.Compare)
+
+	fmt.Println(x, ok)
+
+	x, ok = stream.Of[int]().
+		Max(cmp.Compare)
+
+	fmt.Println(x, ok)
+
+	// Output:
+	// 5 true
+	// 0 false
+}
+
+func ExampleStream_Count() {
+	n := stream.Of("a", "bb", "ccc", "dddd", "eeeee").
+		Count()
+
+	fmt.Println(n)
+
+	// Output:
+	// 5
+}
+
+func ExampleStream_ToSlice() {
+	s := stream.Of("a", "bb", "ccc").
+		ToSlice()
+
+	fmt.Println(s)
+
+	// Output:
+	// [a bb ccc]
+}
+
+func ExampleStream_Append() {
 	stream.Of(1, 2, 3).
 		Append(stream.Of(4, 5, 6)).
 		Filter(func(x int) bool {
