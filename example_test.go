@@ -2,6 +2,7 @@ package stream_test
 
 import (
 	"bufio"
+	"cmp"
 	"fmt"
 	"os"
 	"strings"
@@ -24,7 +25,7 @@ func Example() {
 		Map(strings.ToLower).
 		Map(func(s string) string { return strings.TrimRight(s, ".,") }).
 		Filter(stream.Distinct[string]()).
-		Sorted(stream.NaturalOrder).
+		Sort(cmp.Compare).
 		Limit(10).
 		ForEach(print)
 
@@ -65,11 +66,10 @@ func ExampleIterate() {
 }
 
 func ExampleIterate_fibonacci() {
-	pairs := stream.Iterate([]int{0, 1}, func(x []int) []int {
+	stream.Iterate([]int{0, 1}, func(x []int) []int {
 		return []int{x[1], x[0] + x[1]}
-	})
-
-	stream.Map(pairs, func(x []int) int { return x[0] }).
+	}).
+		Map(func(x []int) int { return x[0] }).
 		Limit(10).
 		ForEach(print)
 
@@ -140,13 +140,13 @@ func ExampleStream_skipLimit() {
 	// 0
 }
 
-func ExampleStream_sorted() {
+func ExampleStream_sort() {
 	stream.Of("bb", "a", "dddd", "ccc").
-		Sorted(stream.NaturalOrder[string]).
+		Sort(cmp.Compare).
 		ForEach(print)
 
 	stream.Of("bb", "a", "dddd", "ccc").
-		Sorted(stream.ReverseOrder[string]).
+		Sort(stream.Reverse(cmp.Compare[string])).
 		ForEach(print)
 
 	// Output:
@@ -174,8 +174,8 @@ func ExampleStream_forEach() {
 }
 
 func ExampleStream_reduce() {
-	s := stream.Of("a", "bb", "ccc", "dddd")
-	n, ok := stream.Map(s, func(s string) int { return len(s) }).
+	n, ok := stream.Of("a", "bb", "ccc", "dddd").
+		Map(func(s string) int { return len(s) }).
 		Reduce(func(a, b int) int { return a + b })
 
 	fmt.Println(n, ok)
@@ -184,7 +184,7 @@ func ExampleStream_reduce() {
 	// 10 true
 }
 
-func ExampleFlatMap_sameType() {
+func ExampleStream_flatMap_sameType() {
 	split := func(s string) stream.Stream[string] {
 		return stream.Slice(strings.Split(s, ""))
 	}
@@ -201,13 +201,13 @@ func ExampleFlatMap_sameType() {
 	// c
 }
 
-func ExampleFlatMap() {
+func ExampleStream_flatMap() {
 	runes := func(s string) stream.Stream[rune] {
 		return stream.Slice([]rune(s))
 	}
 
-	s := stream.Of("a", "bb", "ccc", "dddd")
-	stream.FlatMap(s, runes).
+	stream.Of("a", "bb", "ccc", "dddd").
+		FlatMap(runes).
 		Limit(4).
 		ForEach(print)
 
@@ -279,24 +279,23 @@ func ExampleStream_filterAllButLast() {
 	// [foo baz goo bar gaz]
 }
 
-func ExampleCollect_groupBy() {
+func ExampleStream_collect_groupBy() {
 	type result struct {
 		name  string
 		grade string
 	}
 
-	s := stream.Slice([]result{
+	g := stream.Slice([]result{
 		{"Alice", "A"},
 		{"Bob", "B"},
 		{"Charlie", "C"},
 		{"Alan", "A"},
 		{"Barbie", "B"},
 		{"Carl", "C"},
-	})
-
-	g := stream.Collect(s, make(map[string][]string), func(m map[string][]string, r result) {
-		m[r.grade] = append(m[r.grade], r.name)
-	})
+	}).
+		Collect(make(map[string][]string), func(m map[string][]string, r result) {
+			m[r.grade] = append(m[r.grade], r.name)
+		})
 	fmt.Println(g)
 
 	// Output:
@@ -387,17 +386,17 @@ func ExampleStream_findFirst() {
 
 func ExampleStream_minMax() {
 	x, ok := stream.Of(2, 5, 1, 4, 3).
-		Max(stream.NaturalOrder[int])
+		Max(cmp.Compare)
 
 	fmt.Println(x, ok)
 
 	x, ok = stream.Of(2, 5, 1, 4, 3).
-		Min(stream.NaturalOrder[int])
+		Min(cmp.Compare)
 
 	fmt.Println(x, ok)
 
 	x, ok = stream.Of[int]().
-		Min(stream.NaturalOrder[int])
+		Min(cmp.Compare)
 
 	fmt.Println(x, ok)
 
